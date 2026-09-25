@@ -1,0 +1,36 @@
+/** Where the presentation is: which slide, and how many of its builds have played. */
+export interface Position {
+  readonly slide: number;
+  readonly step: number;
+}
+
+/** `steps[i]` is the number of on-click builds of slide i. Functions return the same object when nothing moves. */
+export function next(position: Position, steps: readonly number[]): Position {
+  if (position.step < steps[position.slide]) {
+    return { slide: position.slide, step: position.step + 1 };
+  }
+  if (position.slide < steps.length - 1) {
+    return { slide: position.slide + 1, step: 0 };
+  }
+  return position;
+}
+
+export function prev(position: Position, steps: readonly number[]): Position {
+  if (position.step > 0) {
+    return { slide: position.slide, step: position.step - 1 };
+  }
+  if (position.slide > 0) {
+    const slide = position.slide - 1;
+    return { slide, step: steps[slide] };
+  }
+  return position;
+}
+
+export function first(): Position {
+  return { slide: 0, step: 0 };
+}
+
+export function last(steps: readonly number[]): Position {
+  const slide = steps.length - 1;
+  return { slide, step: steps[slide] };
+}
