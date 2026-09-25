@@ -18,6 +18,13 @@ describe('actionForKey', () => {
     expect(actionForKey('Escape')).toBe('exit');
   });
 
+  test('maps the overview and presenter view', () => {
+    expect(actionForKey('o')).toBe('overview');
+    expect(actionForKey('O')).toBe('overview');
+    expect(actionForKey('p')).toBe('presenter');
+    expect(actionForKey('P')).toBe('presenter');
+  });
+
   test('ignores unrelated keys', () => {
     expect(actionForKey('a')).toBeNull();
     expect(actionForKey('Shift')).toBeNull();

@@ -34,3 +34,7 @@ export function last(steps: readonly number[]): Position {
   const slide = steps.length - 1;
   return { slide, step: steps[slide] };
 }
+
+export function goTo(slide: number, steps: readonly number[]): Position {
+  return { slide: Math.min(Math.max(slide, 0), steps.length - 1), step: 0 };
+}

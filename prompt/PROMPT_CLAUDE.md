@@ -24,7 +24,7 @@ Tu vas créer une présentation en motion design au format **Motion Deck** : un 
     <style>/* CSS de cette slide uniquement */</style>
     <div class="scene">…</div>
     <script>/* JS de cette slide uniquement */</script>
-    <aside data-notes>Notes du présentateur (non affichées).</aside>
+    <aside data-notes>Notes du présentateur (visibles seulement dans la vue présentateur).</aside>
   </template>
 
   <template data-slide>…</template>

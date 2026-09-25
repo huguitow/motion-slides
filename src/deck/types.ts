@@ -1,4 +1,5 @@
-export type Transition = 'fade' | 'slide' | 'none';
+export const TRANSITIONS = ['fade', 'slide', 'none'] as const;
+export type Transition = (typeof TRANSITIONS)[number];
 
 export interface Slide {
   /** Slide markup (styles, content and scripts), without speaker notes. */

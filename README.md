@@ -13,8 +13,13 @@ Un lecteur de présentations en motion design. Claude écrit les slides en HTML/
 | Espace, →, ↓, Page suivante, Entrée, clic | Étape / slide suivante |
 | ←, ↑, Page précédente, Retour arrière, clic droit | Étape / slide précédente |
 | Début / Fin | Première / dernière slide |
+| Numéro puis Entrée | Aller à cette slide |
+| O | Vue d'ensemble (flèches + Entrée pour choisir) |
+| P | Vue présentateur (autre fenêtre) |
 | F | Plein écran |
 | Échap | Quitter (hors plein écran) |
+
+**Vue présentateur** : une seconde fenêtre affiche la slide en cours, la prochaine étape, les notes (`<aside data-notes>`), un chronomètre et l'heure. Elle pilote la présentation : mets la fenêtre principale en plein écran sur le projecteur et garde la vue présentateur sur ton écran. Les deux fenêtres communiquent localement via `BroadcastChannel` (même navigateur, même origine) ; autorise les pop-ups si le navigateur bloque l'ouverture.
 
 ## Format `.deck.html`
 
@@ -32,12 +37,13 @@ Exemple complet : [`public/examples/demo.deck.html`](public/examples/demo.deck.h
 npm install
 npm run dev        # http://localhost:5173
 npm test           # tests unitaires (Vitest)
-npm run coverage   # couverture de src/deck
+npm run coverage   # couverture de la logique pure (src/deck, chronomètre)
 npm run build      # vérification des types + build dans dist/
 ```
 
 - `src/deck/` : logique pure et testée (lecture du fichier, navigation, mise à l'échelle, runtime injecté dans les slides).
-- `src/player/` : la scène (iframes isolées, transitions) et le lecteur (clavier, clic, interface).
+- `src/player/` : la scène (iframes isolées, transitions), le lecteur (clavier, clic, interface), la vue d'ensemble et le lien vers le présentateur.
+- `src/presenter/` : la fenêtre présentateur et son chronomètre.
 - `src/home.ts` : l'écran d'accueil.
 
 ## Sécurité

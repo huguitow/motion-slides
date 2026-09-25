@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { first, last, next, prev, type Position } from './navigation';
+import { first, goTo, last, next, prev, type Position } from './navigation';
 
 // Slide 0 has 2 builds, slide 1 has none, slide 2 has 1.
 const steps = [2, 0, 1];
@@ -48,5 +48,11 @@ describe('jumps', () => {
   test('first and last go to the deck boundaries', () => {
     expect(first()).toEqual(at(0, 0));
     expect(last(steps)).toEqual(at(2, 1));
+  });
+
+  test('goTo lands on the first build of a slide and clamps out-of-range indexes', () => {
+    expect(goTo(1, steps)).toEqual(at(1, 0));
+    expect(goTo(-5, steps)).toEqual(at(0, 0));
+    expect(goTo(42, steps)).toEqual(at(2, 0));
   });
 });

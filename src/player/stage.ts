@@ -1,6 +1,8 @@
 import { fitStage } from '../deck/fit';
+import type { Position } from '../deck/navigation';
 import type { PlayerMessage } from '../deck/runtime';
-import type { Transition } from '../deck/types';
+import { buildSlideDocument } from '../deck/slide-document';
+import type { Deck, Transition } from '../deck/types';
 
 export type Direction = 'forward' | 'backward';
 
@@ -17,6 +19,7 @@ export class Stage {
   private readonly resizeObserver: ResizeObserver;
   private current: HTMLIFrameElement | null = null;
   private pending: HTMLIFrameElement | null = null;
+  private shownSlide = -1;
 
   /** `currentStep` is read when a slide finishes loading, so fast key presses are never lost. */
   constructor(
@@ -31,7 +34,17 @@ export class Stage {
     this.fit();
   }
 
-  show(documentHtml: string, slideIndex: number, transition: Transition, direction: Direction): void {
+  /** Shows `position`: plays a build if that slide is already on stage, otherwise loads the slide. */
+  display(deck: Deck, position: Position, transition: Transition, direction: Direction): void {
+    if (position.slide === this.shownSlide) {
+      this.setStep(position.slide, position.step);
+      return;
+    }
+    this.shownSlide = position.slide;
+    this.show(buildSlideDocument(deck, position.slide, position.step), position.slide, transition, direction);
+  }
+
+  private show(documentHtml: string, slideIndex: number, transition: Transition, direction: Direction): void {
     this.pending?.remove();
 
     const frame = document.createElement('iframe');
@@ -49,7 +62,7 @@ export class Stage {
   }
 
   /** Plays a build inside the slide that is on screen. Ignored while that slide is still loading. */
-  setStep(slideIndex: number, step: number): void {
+  private setStep(slideIndex: number, step: number): void {
     if (this.current?.dataset.slide === String(slideIndex)) {
       post(this.current, { type: 'deck:step', step });
     }

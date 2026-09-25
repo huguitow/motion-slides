@@ -1,0 +1,165 @@
+.presenter {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+}
+
+.presenter-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.presenter-title {
+  color: var(--text);
+  font-size: 17px;
+}
+
+.presenter-spacer {
+  flex: 1;
+}
+
+.presenter-elapsed {
+  color: var(--accent-2);
+  font: 700 28px/1 ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.presenter-clock {
+  color: var(--text);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.presenter-toolbar {
+  display: flex;
+  gap: 6px;
+}
+
+.presenter-toolbar button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.presenter-toolbar button:hover,
+.presenter-toolbar button:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.presenter-current {
+  position: relative;
+  align-self: center;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.presenter-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.presenter-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.presenter-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.presenter-side h2 {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.presenter-next {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.presenter-next-end {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--muted);
+}
+
+.presenter-next-end[hidden] {
+  display: none;
+}
+
+.presenter-notes {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.presenter-notes.is-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.presenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  place-items: center;
+  background: rgb(8 8 12 / 0.92);
+  color: var(--text);
+  font-size: 20px;
+}
+
+.presenter.is-waiting .presenter-overlay-waiting,
+.presenter.is-ended .presenter-overlay-ended {
+  display: grid;
+}
+
+@media (max-width: 760px) {
+  .presenter {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    overflow-y: auto;
+  }
+}

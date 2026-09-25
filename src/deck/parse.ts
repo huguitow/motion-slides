@@ -1,8 +1,7 @@
-import type { Deck, Slide, Transition } from './types';
+import { TRANSITIONS, type Deck, type Slide, type Transition } from './types';
 
 const MAX_STEPS = 99;
 const DEFAULT_TITLE = 'Sans titre';
-const TRANSITIONS: readonly Transition[] = ['fade', 'slide', 'none'];
 
 export class DeckParseError extends Error {
   constructor(message: string) {

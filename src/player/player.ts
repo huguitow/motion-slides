@@ -1,10 +1,11 @@
+import { jumpInput } from '../deck/jump';
 import { actionForKey, type PlayerAction } from '../deck/keymap';
-import { first, last, next, prev, type Position } from '../deck/navigation';
-import { buildSlideDocument } from '../deck/slide-document';
+import { first, goTo, last, next, prev, type Position } from '../deck/navigation';
 import type { Deck } from '../deck/types';
+import { openOverview, type OverviewHandle } from './overview';
+import { createPlayerDom, createToast, renderHud, watchIdle } from './player-ui';
+import { createPresenterLink } from './presenter-link';
 import { Stage } from './stage';
-
-const IDLE_HIDE_MS = 2500;
 
 export interface PlayerOptions {
   readonly onExit: () => void;
@@ -18,35 +19,40 @@ export interface PlayerHandle {
 export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOptions): PlayerHandle {
   const steps = deck.slides.map((slide) => slide.steps);
   let position: Position = first();
+  let jumpBuffer = '';
+  let overview: OverviewHandle | null = null;
 
-  const root = createPlayerDom(deck.title);
-  host.append(root.element);
-  const stage = new Stage(root.viewport, () => position.step);
+  const dom = createPlayerDom(deck.title);
+  host.append(dom.element);
+  const stage = new Stage(dom.viewport, () => position.step);
+  const toast = createToast(dom.toast);
+  const presenter = createPresenterLink({ deck, position: () => position, onAction: (action) => perform(action) });
 
   const moveTo = (target: Position) => {
     if (target === position) return;
-    const from = position;
+    const direction = target.slide >= position.slide ? 'forward' : 'backward';
     position = target;
-    if (target.slide === from.slide) {
-      stage.setStep(target.slide, target.step);
-    } else {
-      showSlide(target.slide > from.slide ? 'forward' : 'backward');
-    }
-    updateHud();
+    stage.display(deck, position, deck.slides[position.slide].transition, direction);
+    presenter.publish(position);
+    renderHud(dom, deck, position);
   };
 
-  const showSlide = (direction: 'forward' | 'backward', transition = deck.slides[position.slide].transition) => {
-    const html = buildSlideDocument(deck, position.slide, position.step);
-    stage.show(html, position.slide, transition, direction);
+  const closeOverview = () => {
+    overview?.destroy();
+    overview = null;
+    dom.element.classList.remove('has-overview');
   };
 
-  const updateHud = () => {
-    const slide = deck.slides[position.slide];
-    root.counter.textContent = `${position.slide + 1} / ${deck.slides.length}`;
-    root.steps.textContent = slide.steps > 0 ? `étape ${position.step} / ${slide.steps}` : '';
-    const total = steps.reduce((sum, n) => sum + n + 1, 0);
-    const done = steps.slice(0, position.slide).reduce((sum, n) => sum + n + 1, 0) + position.step + 1;
-    root.progress.style.transform = `scaleX(${done / total})`;
+  // Only reachable while the overview is closed: when open, it receives every key itself.
+  const showOverview = () => {
+    dom.element.classList.add('has-overview');
+    overview = openOverview(dom.element, deck, position.slide, {
+      onSelect: (index) => {
+        closeOverview();
+        moveTo(goTo(index, steps));
+      },
+      onClose: closeOverview,
+    });
   };
 
   const perform = (action: PlayerAction) => {
@@ -60,55 +66,75 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
       case 'last':
         return moveTo(last(steps));
       case 'fullscreen':
-        return toggleFullscreen(root.element);
+        return toggleFullscreen(dom.element);
+      case 'overview':
+        return showOverview();
+      case 'presenter':
+        if (!presenter.open()) toast.show('Fenêtre bloquée : autorise les pop-ups pour ce site.');
+        return;
       case 'exit':
         if (!document.fullscreenElement) options.onExit();
         return;
     }
   };
 
+  /** Digits then Enter jump to a slide. Returns true when the key was part of that. */
+  const handleJumpKey = (key: string) => {
+    const jump = jumpInput(jumpBuffer, key);
+    jumpBuffer = jump.buffer;
+    toast.show(jumpBuffer ? `Aller à la slide ${jumpBuffer} — Entrée pour valider` : '', true);
+    if (jump.target !== undefined) moveTo(goTo(jump.target, steps));
+    return jump.handled;
+  };
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (overview) {
+      if (overview.handleKey(event)) event.preventDefault();
+      else routeAction(event);
+      return;
+    }
     // A HUD button reached with Tab keeps its native Enter/Space activation.
     if (event.target instanceof HTMLButtonElement && (event.key === 'Enter' || event.key === ' ')) return;
+    if (handleJumpKey(event.key)) return event.preventDefault();
+    routeAction(event);
+  };
+
+  const routeAction = (event: KeyboardEvent) => {
     const action = actionForKey(event.key);
     if (!action) return;
     event.preventDefault();
     perform(action);
   };
 
-  let idleTimer = 0;
-  const wake = () => {
-    root.element.classList.remove('is-idle');
-    window.clearTimeout(idleTimer);
-    idleTimer = window.setTimeout(() => root.element.classList.add('is-idle'), IDLE_HIDE_MS);
-  };
-
-  root.shield.addEventListener('click', () => perform('next'));
-  root.shield.addEventListener('contextmenu', (event) => {
+  dom.shield.addEventListener('click', () => perform('next'));
+  dom.shield.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     perform('prev');
   });
-  root.buttons.prev.addEventListener('click', () => perform('prev'));
-  root.buttons.next.addEventListener('click', () => perform('next'));
-  root.buttons.fullscreen.addEventListener('click', () => perform('fullscreen'));
-  root.buttons.close.addEventListener('click', () => options.onExit());
+  for (const button of dom.buttons) {
+    const action = button.dataset.action as PlayerAction;
+    // The close button always leaves; only the Escape key defers to the browser in fullscreen.
+    button.addEventListener('click', () => (action === 'exit' ? options.onExit() : perform(action)));
+  }
   // Mouse clicks must not leave focus on a button, or Space would press it again instead of advancing.
-  root.hud.addEventListener('pointerdown', (event) => event.preventDefault());
-  root.element.addEventListener('pointermove', wake);
+  dom.hud.addEventListener('pointerdown', (event) => event.preventDefault());
   document.addEventListener('keydown', onKeyDown);
+  const stopIdleWatch = watchIdle(dom.element);
 
-  showSlide('forward');
-  updateHud();
-  wake();
+  stage.display(deck, position, deck.slides[0].transition, 'forward');
+  renderHud(dom, deck, position);
 
   return {
     destroy() {
       document.removeEventListener('keydown', onKeyDown);
-      window.clearTimeout(idleTimer);
+      stopIdleWatch();
+      toast.destroy();
       if (document.fullscreenElement) void document.exitFullscreen();
+      closeOverview();
+      presenter.destroy();
       stage.destroy();
-      root.element.remove();
+      dom.element.remove();
     },
   };
 }
@@ -116,41 +142,4 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
 function toggleFullscreen(element: HTMLElement): void {
   const request = document.fullscreenElement ? document.exitFullscreen() : element.requestFullscreen();
   request.catch((error: unknown) => console.warn('Plein écran indisponible :', error));
-}
-
-function createPlayerDom(title: string) {
-  const element = document.createElement('div');
-  element.className = 'player';
-  element.innerHTML = `
-    <div class="player-viewport"></div>
-    <div class="player-shield" aria-hidden="true"></div>
-    <div class="player-progress"><div class="player-progress-bar"></div></div>
-    <div class="player-hud" role="toolbar" aria-label="Contrôles de la présentation">
-      <span class="player-title"></span>
-      <span class="player-steps"></span>
-      <button type="button" data-action="prev" aria-label="Précédent" title="Précédent (←)">←</button>
-      <span class="player-counter"></span>
-      <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">→</button>
-      <button type="button" data-action="fullscreen" aria-label="Plein écran" title="Plein écran (F)">⛶</button>
-      <button type="button" data-action="close" aria-label="Fermer" title="Fermer (Échap)">✕</button>
-    </div>`;
-
-  const find = <T extends Element>(selector: string) => element.querySelector<T>(selector)!;
-  find<HTMLSpanElement>('.player-title').textContent = title;
-
-  return {
-    element,
-    viewport: find<HTMLDivElement>('.player-viewport'),
-    shield: find<HTMLDivElement>('.player-shield'),
-    hud: find<HTMLDivElement>('.player-hud'),
-    progress: find<HTMLDivElement>('.player-progress-bar'),
-    counter: find<HTMLSpanElement>('.player-counter'),
-    steps: find<HTMLSpanElement>('.player-steps'),
-    buttons: {
-      prev: find<HTMLButtonElement>('[data-action="prev"]'),
-      next: find<HTMLButtonElement>('[data-action="next"]'),
-      fullscreen: find<HTMLButtonElement>('[data-action="fullscreen"]'),
-      close: find<HTMLButtonElement>('[data-action="close"]'),
-    },
-  };
 }

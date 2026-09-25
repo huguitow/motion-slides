@@ -1,6 +1,7 @@
 import { DeckParseError, parseDeck } from './deck/parse';
 import { mountHome, type HomeHandle } from './home';
 import { mountPlayer, type PlayerHandle } from './player/player';
+import { mountPresenter } from './presenter/presenter';
 import './styles/app.css';
 
 const APP_TITLE = 'Motion Deck';
@@ -31,4 +32,9 @@ function present(source: string, fileName: string): void {
   }
 }
 
-showHome();
+const presenterId = new URLSearchParams(window.location.search).get('presenter');
+if (presenterId) {
+  mountPresenter(app, presenterId);
+} else {
+  showHome();
+}
