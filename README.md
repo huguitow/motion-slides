@@ -9,9 +9,9 @@ drop it into Motion Slides and press <kbd>Space</kbd>.
 
 [![CI](https://github.com/huguitow/motion-slides/actions/workflows/ci.yml/badge.svg)](https://github.com/huguitow/motion-slides/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-8b7bff.svg)](LICENSE)
-![No install, no API key](https://img.shields.io/badge/no%20install-no%20API%20key-3de0c5.svg)
+![No API key](https://img.shields.io/badge/no%20API%20key-runs%20locally-3de0c5.svg)
 
-[**Try it in your browser →**](https://huguitow.github.io/motion-slides/)
+[**Get started →**](#getting-started)
 
 <img src="docs/media/demo.gif" alt="Motion Slides playing its demo deck: a fan of animated slides, a static slide turning into an animated chart, and an illustrated pipeline from Claude to the projector" width="100%">
 
@@ -32,7 +32,20 @@ Motion Slides is the missing piece: a **player** that turns those hand-coded pag
 
 1. **Type your topic and copy the prompt.** On the home screen, type what your talk is about (*"The Eiffel Tower, for 14-year-olds, 10 minutes"*) and press *Copier le prompt* or <kbd>Enter</kbd>. You get the whole format specification and art-direction rules, with your topic appended.
 2. **Ask any Claude.** Paste it into claude.ai, the desktop app or Claude Code. Claude returns one self-contained `.deck.html` file.
-3. **Drop it into Motion Slides** and present. No install, no account, no API key: everything runs locally in your browser.
+3. **Drop it into Motion Slides** and present. No account, no API key: everything runs locally in your browser.
+
+## Getting started
+
+You need [Node.js](https://nodejs.org/) 20 or newer.
+
+```bash
+git clone https://github.com/huguitow/motion-slides.git
+cd motion-slides
+npm install
+npm run dev
+```
+
+Then open <http://localhost:5173>. To serve a production build instead, run `npm run build` and serve the `dist/` folder with any static file server.
 
 The prompt pushes Claude towards real visual storytelling: an identity derived from the topic (palette, fonts, a recurring motif), an SVG illustration on every slide, and every figure shown **to scale** next to familiar references.
 
@@ -117,7 +130,7 @@ npm run coverage   # coverage of the pure logic
 npm run build      # type-check + production build in dist/
 ```
 
-Built with TypeScript and Vite, no runtime dependencies. The pure logic (parsing, navigation, validation, the slide runtime, the presenter protocol) lives in [`src/deck/`](src/deck/) and is unit-tested; the UI lives in [`src/player/`](src/player/) and [`src/presenter/`](src/presenter/). Pushing to `main` deploys the app to GitHub Pages.
+Built with TypeScript and Vite, no framework; the only runtime dependencies are the three bundled font families. The pure logic (parsing, navigation, validation, the slide runtime, the presenter protocol) lives in [`src/deck/`](src/deck/) and is unit-tested; the UI lives in [`src/home/`](src/home/), [`src/player/`](src/player/) and [`src/presenter/`](src/presenter/).
 
 > **Language note:** the interface, the prompt and the example decks are in French for now. Claude answers in the language you write your topic in, and translations of the UI and prompt are very welcome.
 
