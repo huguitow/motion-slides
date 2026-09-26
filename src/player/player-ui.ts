@@ -48,6 +48,7 @@ export function createPlayerDom() {
         <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">${ICONS.overview}</button>
         <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">${ICONS.presenter}</button>
         <button type="button" data-action="pdf" aria-label="Exporter en PDF" title="Exporter en PDF (Ctrl+P)">${ICONS.pdf}</button>
+        <button type="button" data-action="export" aria-label="Exporter la présentation" title="Exporter une présentation autonome (.html)">${ICONS.download}</button>
         <button type="button" data-action="fullscreen" aria-label="Plein écran" title="Plein écran (F)">${ICONS.fullscreen}</button>
         <button type="button" data-panel="issues" class="player-issues-button" hidden></button>
         <button type="button" data-action="exit" aria-label="Fermer" title="Fermer (Échap)">${ICONS.close}</button>

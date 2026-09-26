@@ -7,6 +7,7 @@ export type PlayerAction =
   | 'overview'
   | 'presenter'
   | 'pdf'
+  | 'export'
   | 'retouch'
   | 'black'
   | 'white'
