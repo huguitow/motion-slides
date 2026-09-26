@@ -15,7 +15,7 @@ function showHome(errorMessage?: string): void {
   player?.destroy();
   player = null;
   document.title = APP_TITLE;
-  home ??= mountHome(app, { onDeckSource: present, demoUrl: `${import.meta.env.BASE_URL}examples/demo.deck.html` });
+  home ??= mountHome(app, { onDeckSource: present, examplesUrl: `${import.meta.env.BASE_URL}examples/` });
   if (errorMessage) home.showError(errorMessage);
 }
 

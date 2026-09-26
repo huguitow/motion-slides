@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="deck-title" content="La tour Eiffel">
+  <title>La tour Eiffel</title>
+</head>
+<body>
+  <p>Ouvre ce fichier dans Motion Deck pour le présenter.</p>
+
+  <template data-deck-head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;600&display=swap">
+    <style>
+      :root {
+        --night: #0b1426;
+        --iron: #8a6b4e;
+        --iron-dark: #5c4431;
+        --iron-light: #b08d63;
+        --gold: #f2c14e;
+        --cream: #f5ecd9;
+        --muted: #a3abc0;
+        --ease: cubic-bezier(.22, 1, .36, 1);
+        --ease-io: cubic-bezier(.65, 0, .35, 1);
+      }
+      body { background: var(--night); color: var(--cream); font-family: Inter, system-ui, sans-serif; }
+      .serif { font-family: 'Playfair Display', Georgia, serif; }
+      .kicker {
+        position: absolute; top: 96px; left: 140px;
+        font: 600 26px/1 Inter, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: var(--gold);
+      }
+      .tower-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+      .deck-entered .tower-line { animation: tower-draw 2.4s var(--ease-io) .2s forwards; }
+      .tower-fill { opacity: 0; }
+      .deck-entered .tower-fill { animation: tower-fill 1.4s ease 1.8s forwards; }
+      @keyframes tower-draw { to { stroke-dashoffset: 0; } }
+      @keyframes tower-fill { to { opacity: 1; } }
+      @keyframes rise { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: none; } }
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      }
+    </style>
+    <script>
+      // Tower drawn in metres: origin at the centre of the base, y grows downwards (so heights are negative).
+      window.TOWER_PATH =
+        'M-62 0C-52-22-42-44-36-57L-21-115C-15-175-11-235-9-276L-4-300H4L9-276C11-235 15-175 21-115L36-57C42-44 52-22 62 0Z' +
+        'M-37 0C-33-28-16-39 0-39C16-39 33-28 37 0Z' +
+        'M-19-63L-9-110H9L19-63Z';
+
+      /** SVG markup of the tower: a lattice-textured fill and an outline that can draw itself. */
+      window.eiffelTower = function (id, fill, line) {
+        return `
+          <defs>
+            <pattern id="${id}-lattice" width="5" height="5" patternUnits="userSpaceOnUse">
+              <path d="M0 0L5 5M5 0L0 5" stroke="rgba(0,0,0,.38)" stroke-width=".45"/>
+            </pattern>
+          </defs>
+          <g class="tower-fill">
+            <path d="${TOWER_PATH}" fill="${fill}" fill-rule="evenodd"/>
+            <path d="${TOWER_PATH}" fill="url(#${id}-lattice)" fill-rule="evenodd"/>
+            <rect x="-40" y="-63" width="80" height="6" fill="${fill}"/>
+            <rect x="-24" y="-118" width="48" height="5" fill="${fill}"/>
+            <rect x="-11" y="-280" width="22" height="4" fill="${fill}"/>
+            <rect x="-.7" y="-330" width="1.4" height="31" fill="${fill}"/>
+          </g>
+          <path class="tower-line" d="${TOWER_PATH}" pathLength="1" fill="none" stroke="${line}"
+                stroke-width=".8" stroke-linejoin="round"/>`;
+      };
+
+      /** Eased numeric animation. Returns a function that cancels it. */
+      window.tween = function (from, to, ms, onUpdate) {
+        const start = performance.now();
+        let frame = 0;
+        const tick = (now) => {
+          const t = Math.min((now - start) / ms, 1);
+          onUpdate(from + (to - from) * (1 - Math.pow(1 - t, 3)));
+          if (t < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(frame);
+      };
+
+      window.formatNumber = (value) => Math.round(value).toLocaleString('fr-FR');
+
+      window.addStars = function (container, count, maxTop) {
+        for (let i = 0; i < count; i++) {
+          const star = document.createElement('i');
+          star.className = 'star';
+          star.style.left = `${Math.random() * 100}%`;
+          star.style.top = `${Math.random() * maxTop}%`;
+          star.style.animationDelay = `${Math.random() * 3}s`;
+          star.style.transform = `scale(${0.5 + Math.random()})`;
+          container.append(star);
+        }
+      };
+    </script>
+  </template>
+
+  <!-- 1 · Titre : la tour se dessine au crépuscule -->
+  <template data-slide data-transition="none">
+    <style>
+      .sky { position: absolute; inset: 0; background: linear-gradient(180deg, #0b1426 0%, #1b2448 48%, #553a63 78%, #c9785a 100%); }
+      .stars { position: absolute; inset: 0; }
+      .star { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; opacity: .15; animation: twinkle 3s ease-in-out infinite; }
+      @keyframes twinkle { 50% { opacity: .85; } }
+      .glow { position: absolute; left: 0; right: 0; bottom: 0; height: 420px; background: radial-gradient(ellipse at 78% 100%, rgba(242,193,78,.35), transparent 70%); }
+      .tower { position: absolute; right: 200px; top: 80px; height: 1000px; overflow: visible; }
+      .beam {
+        position: absolute; left: 1514px; top: 123px; width: 1300px; height: 90px; transform-origin: 0 50%;
+        background: linear-gradient(90deg, rgba(255,226,150,.5), rgba(255,226,150,0) 80%);
+        clip-path: polygon(0 47%, 100% 0, 100% 100%, 0 53%); opacity: 0; mix-blend-mode: screen;
+      }
+      .deck-entered .beam { animation: fade-in 1s ease 3.4s forwards, sweep 12s linear 3.4s infinite; }
+      @keyframes sweep { from { transform: rotate(var(--a)); } to { transform: rotate(calc(var(--a) + 360deg)); } }
+      h1 { position: absolute; left: 140px; top: 330px; margin: 0; font-size: 176px; line-height: .95; font-weight: 900; }
+      h1 span { display: block; opacity: 0; }
+      .deck-entered h1 span { animation: rise 1.2s var(--ease) calc(.4s + var(--i) * .15s) both; }
+      .sub { position: absolute; left: 140px; top: 720px; margin: 0; font: italic 700 52px 'Playfair Display', serif; color: var(--gold); opacity: 0; }
+      .deck-entered .sub { animation: rise 1s var(--ease) 1.1s both; }
+      .deck-entered .kicker { animation: fade-in 1s ease .2s both; }
+    </style>
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="glow"></div>
+    <svg class="tower" viewBox="-70 -335 140 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="t1-bronze" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#6b4f37"/><stop offset=".6" stop-color="#9c7650"/><stop offset="1" stop-color="#e6b964"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="beam" style="--a: -20deg"></div>
+    <div class="beam" style="--a: 160deg"></div>
+    <span class="kicker">Paris · 1889</span>
+    <h1 class="serif"><span style="--i:0">La tour</span><span style="--i:1">Eiffel</span></h1>
+    <p class="sub">Histoire de la Dame de fer</p>
+    <script>
+      document.querySelector('.tower').insertAdjacentHTML('beforeend', eiffelTower('t1', 'url(#t1-bronze)', '#f2c14e'));
+      addStars(document.querySelector('.stars'), 110, 65);
+    </script>
+    <aside data-notes>Bienvenue. Construite pour l'Exposition universelle de 1889, la tour Eiffel devait être démontée au bout de vingt ans. Elle est devenue le symbole de Paris.</aside>
+  </template>
+
+  <!-- 2 · Le chantier : la tour se construit avec la frise -->
+  <template data-slide data-steps="3" data-transition="slide">
+    <style>
+      .paper {
+        position: absolute; inset: 0; background-color: #0e2340;
+        background-image: linear-gradient(rgba(140,190,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(140,190,255,.08) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+      h2 { position: absolute; left: 140px; top: 160px; margin: 0; width: 1000px; font-size: 92px; line-height: 1.02; font-weight: 700; }
+      .tower { position: absolute; right: 230px; top: 110px; height: 850px; overflow: visible; }
+      .blueprint { fill: none; stroke: rgba(190,220,255,.55); stroke-width: .6; stroke-dasharray: 3 2; }
+      .tower .tower-line { display: none; }
+      .tower .tower-fill { opacity: 1; animation: none; }
+      .height-label { font: 700 14px Inter, sans-serif; fill: var(--gold); }
+      .flag { opacity: 0; transition: opacity .6s .9s; transform-box: fill-box; transform-origin: left center; }
+      html[data-step="3"] .flag { opacity: 1; animation: wave 1.6s ease-in-out 1.5s infinite; }
+      @keyframes wave { 50% { transform: skewY(-8deg) scaleX(.94); } }
+      .events { position: absolute; left: 140px; top: 440px; width: 980px; height: 300px; }
+      .event { position: absolute; inset: 0; opacity: 0; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      .event.is-on { opacity: 1; transform: none; }
+      .event .date { font: 700 50px 'Playfair Display', serif; color: var(--gold); }
+      .event p { margin: 16px 0 0; font-size: 40px; line-height: 1.35; }
+      .timeline { position: absolute; left: 160px; top: 850px; width: 900px; height: 4px; background: rgba(255,255,255,.15); }
+      .timeline .fill { position: absolute; inset: 0; background: var(--gold); transform-origin: left; transform: scaleX(0); transition: transform .9s var(--ease); }
+      .dot { position: absolute; top: -12px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: #0e2340; border: 3px solid rgba(255,255,255,.35); transition: all .5s; }
+      .dot.is-on { border-color: var(--gold); background: var(--gold); }
+      .dot span { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); font: 600 32px Inter, sans-serif; color: var(--muted); transition: color .5s; }
+      .dot.is-on span { color: var(--cream); }
+    </style>
+    <div class="paper"></div>
+    <span class="kicker">Le chantier</span>
+    <h2 class="serif">2 ans, 2 mois et 5 jours</h2>
+    <svg class="tower" viewBox="-70 -345 140 350" aria-hidden="true">
+      <defs>
+        <clipPath id="t2-build"><rect id="t2-rect" x="-70" y="0" width="140" height="0"/></clipPath>
+      </defs>
+      <path class="blueprint" d="" fill-rule="evenodd"/>
+      <g clip-path="url(#t2-build)" class="built"></g>
+      <g class="flag">
+        <rect x=".7" y="-330" width="5.4" height="9" fill="#0055a4"/>
+        <rect x="6.1" y="-330" width="5.4" height="9" fill="#ffffff"/>
+        <rect x="11.5" y="-330" width="5.4" height="9" fill="#ef4135"/>
+      </g>
+      <text class="height-label" x="30" y="-4" opacity="0">0 m</text>
+    </svg>
+    <div class="events">
+      <div class="event"><div class="date">1884</div><p>Maurice Koechlin et Émile Nouguier, ingénieurs de l'entreprise Eiffel, dessinent le projet d'un pylône de 300 mètres.</p></div>
+      <div class="event"><div class="date">28 janvier 1887</div><p>Le chantier commence par les fondations des quatre piliers.</p></div>
+      <div class="event"><div class="date">1888</div><p>Les piliers se rejoignent et les deux premiers étages sont achevés.</p></div>
+      <div class="event"><div class="date">31 mars 1889</div><p>Gustave Eiffel hisse le drapeau au sommet, à temps pour l'Exposition universelle.</p></div>
+    </div>
+    <div class="timeline">
+      <div class="fill"></div>
+      <div class="dot" style="left: 0%"><span>1884</span></div>
+      <div class="dot" style="left: 33.33%"><span>1887</span></div>
+      <div class="dot" style="left: 66.66%"><span>1888</span></div>
+      <div class="dot" style="left: 100%"><span>1889</span></div>
+    </div>
+    <script>
+      const HEIGHTS = [0, 8, 115, 330];
+      document.querySelector('.blueprint').setAttribute('d', TOWER_PATH);
+      document.querySelector('.built').innerHTML = eiffelTower('t2', '#8a6b4e', 'none');
+      const rect = document.querySelector('#t2-rect');
+      const label = document.querySelector('.height-label');
+      const events = [...document.querySelectorAll('.event')];
+      const dots = [...document.querySelectorAll('.dot')];
+      const fill = document.querySelector('.timeline .fill');
+      let height = 0;
+      let stop = () => {};
+
+      deck.onStep((step) => {
+        events.forEach((event, i) => event.classList.toggle('is-on', i === step));
+        dots.forEach((dot, i) => dot.classList.toggle('is-on', i <= step));
+        fill.style.transform = `scaleX(${step / 3})`;
+        stop();
+        stop = tween(height, HEIGHTS[step], 1500, (value) => {
+          height = value;
+          rect.setAttribute('y', -value);
+          rect.setAttribute('height', value + 1);
+          label.setAttribute('y', Math.min(-value - 4, -4));
+          label.textContent = `${Math.round(value)} m`;
+          label.setAttribute('opacity', value > 1 ? 1 : 0);
+        });
+      });
+    </script>
+    <aside data-notes>Trois clics : la frise avance et la tour monte avec elle. Environ 300 ouvriers ont assemblé la tour en un peu plus de deux ans, un délai remarquable pour l'époque.</aside>
+  </template>
+
+  <!-- 3 · La hauteur, à l'échelle -->
+  <template data-slide data-steps="2">
+    <style>
+      .bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 100%, #1d2a4a, var(--night) 70%); }
+      .big { position: absolute; left: 140px; top: 170px; }
+      .big strong { display: block; font: 900 200px/1 'Playfair Display', serif; color: var(--gold); font-variant-numeric: tabular-nums; }
+      .big span { display: block; margin-top: 4px; font: 700 60px 'Playfair Display', serif; color: var(--cream); }
+      .note { position: absolute; left: 140px; top: 520px; width: 400px; margin: 0; font-size: 38px; line-height: 1.4; opacity: 0; transform: translateY(20px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      .note strong { color: var(--gold); }
+      html.deck-entered[data-step="0"] .n0, html[data-step="1"] .n1, html[data-step="2"] .n2 { opacity: 1; transform: none; transition-delay: .3s; }
+      .scale { position: absolute; left: 560px; top: 90px; height: 900px; overflow: visible; }
+      .ground { stroke: rgba(255,255,255,.35); stroke-width: 1; }
+      .ruler line { stroke: rgba(255,255,255,.55); stroke-width: .6; }
+      .ruler text { font: 600 12px Inter, sans-serif; fill: var(--muted); }
+      .levels { opacity: 0; transition: opacity .7s; }
+      html[data-step="1"] .levels, html[data-step="2"] .levels { opacity: 1; }
+      .levels line { stroke: var(--gold); stroke-width: .6; stroke-dasharray: 3 2; }
+      .levels text { font: 700 13px Inter, sans-serif; fill: var(--gold); }
+      .bld { transform: scaleY(0); transform-box: fill-box; transform-origin: 50% 100%; transition: transform 1.2s var(--ease); transition-delay: var(--d); }
+      html[data-step="2"] .bld { transform: none; }
+      .cmp-label { opacity: 0; transition: opacity .6s; }
+      html[data-step="2"] .cmp-label { opacity: 1; transition-delay: calc(var(--d) + .9s); }
+      .cmp-label .h { font: 700 15px Inter, sans-serif; fill: var(--gold); }
+      .cmp-label .n { font: 600 12px Inter, sans-serif; fill: var(--cream); }
+    </style>
+    <div class="bg"></div>
+    <span class="kicker">La hauteur</span>
+    <div class="big"><strong>0</strong><span>mètres</span></div>
+    <p class="note n0">Antennes comprises, depuis <strong>2022</strong>. En 1889, elle mesurait 300 m.</p>
+    <p class="note n1">Trois étages : <strong>57 m</strong>, <strong>115 m</strong> et <strong>276 m</strong>.</p>
+    <p class="note n2">À la même échelle, trois autres géants.</p>
+    <svg class="scale" viewBox="-185 -352 545 372" aria-hidden="true">
+      <defs>
+        <linearGradient id="t3-bronze" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#6b4f37"/><stop offset="1" stop-color="#b58b5a"/>
+        </linearGradient>
+        <pattern id="t3-windows" width="5" height="4" patternUnits="userSpaceOnUse">
+          <rect x="1" y="1" width="3" height="2" fill="rgba(242,193,78,.35)"/>
+        </pattern>
+      </defs>
+      <line class="ground" x1="-185" y1="0" x2="360" y2="0"/>
+      <g class="ruler"></g>
+      <g class="tower" transform="translate(-40 0)"></g>
+      <g class="levels"></g>
+
+      <g class="bld" style="--d: 0s">
+        <rect x="150" y="-210" width="50" height="210" fill="#2b3350"/>
+        <rect x="150" y="-210" width="50" height="210" fill="url(#t3-windows)"/>
+        <rect x="148" y="-214" width="54" height="4" fill="#3a4466"/>
+      </g>
+      <g class="bld" style="--d: .25s">
+        <rect x="225" y="-70" width="12" height="70" fill="#9b8a6a"/>
+        <rect x="224" y="-78" width="14" height="10" fill="#b3a07a"/>
+        <circle cx="231" cy="-73" r="3.4" fill="#f5ecd9"/>
+        <rect x="225.5" y="-84" width="11" height="6" fill="#9b8a6a"/>
+        <polygon points="225.5,-84 236.5,-84 231,-96" fill="#5f6b58"/>
+      </g>
+      <g class="bld" style="--d: .5s">
+        <rect x="294" y="-47" width="26" height="47" fill="#8f8a7c"/>
+        <polygon points="299,-47 315,-47 310,-78 304,-78" fill="#7fb8a4"/>
+        <circle cx="307" cy="-81" r="3.2" fill="#7fb8a4"/>
+        <polygon points="303,-83 304.5,-88 306,-84 307.5,-89 309,-84 310.5,-88 311,-83" fill="#7fb8a4"/>
+        <line x1="309.5" y1="-77" x2="313.5" y2="-90" stroke="#7fb8a4" stroke-width="2.4" stroke-linecap="round"/>
+        <ellipse cx="313.8" cy="-91.5" rx="1.6" ry="2" fill="#f2c14e"/>
+      </g>
+
+      <g class="cmp-label" style="--d: 0s" text-anchor="middle">
+        <text class="h" x="175" y="-232">210 m</text>
+        <text class="n" x="175" y="-218">Tour Montparnasse</text>
+      </g>
+      <g class="cmp-label" style="--d: .25s" text-anchor="middle">
+        <text class="h" x="231" y="-116">96 m</text>
+        <text class="n" x="231" y="-102">Big Ben</text>
+      </g>
+      <g class="cmp-label" style="--d: .5s" text-anchor="middle">
+        <text class="h" x="307" y="-126">93 m</text>
+        <text class="n" x="307" y="-112">Statue de</text>
+        <text class="n" x="307" y="-99">la Liberté</text>
+      </g>
+    </svg>
+    <script>
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const make = (tag, attrs, text) => {
+        const el = document.createElementNS(SVG_NS, tag);
+        Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+        if (text) el.textContent = text;
+        return el;
+      };
+
+      const ruler = document.querySelector('.ruler');
+      ruler.append(make('line', { x1: -150, y1: 0, x2: -150, y2: -330 }));
+      for (let m = 0; m <= 330; m += 10) {
+        const major = m % 50 === 0;
+        ruler.append(make('line', { x1: -150, y1: -m, x2: major ? -159 : -154, y2: -m }));
+        if (major) ruler.append(make('text', { x: -163, y: -m + 4, 'text-anchor': 'end' }, `${m} m`));
+      }
+
+      const levels = document.querySelector('.levels');
+      for (const [height, text] of [[57, '57 m'], [115, '115 m'], [276, '276 m'], [330, '330 m']]) {
+        levels.append(make('line', { x1: -150, y1: -height, x2: 28, y2: -height }));
+        levels.append(make('text', { x: 32, y: -height + 4.5 }, text));
+      }
+
+      document.querySelector('.tower').innerHTML = eiffelTower('t3', 'url(#t3-bronze)', '#f2c14e');
+
+      const counter = document.querySelector('.big strong');
+      deck.onEnter(() => tween(0, 330, 2400, (value) => (counter.textContent = Math.round(value))));
+    </script>
+    <aside data-notes>La tour se dessine à l'échelle, graduée tous les 10 mètres. Clic 1 : les trois étages. Clic 2 : la tour Montparnasse (210 m), Big Ben (96 m) et la statue de la Liberté avec son socle (93 m), dessinées dans les mêmes proportions.</aside>
+  </template>
+
+  <!-- 4 · La structure : une poutre en treillis et ses rivets -->
+  <template data-slide data-steps="3" data-transition="slide">
+    <style>
+      .bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1a1712, #0f1422); }
+      h2 { position: absolute; left: 140px; top: 160px; margin: 0; font-size: 110px; font-weight: 900; }
+      .stats { position: absolute; left: 140px; top: 420px; display: grid; gap: 34px; }
+      .stat { opacity: 0; transform: translateX(-40px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      .stat.is-on { opacity: 1; transform: none; }
+      .stat strong { display: block; font: 900 96px/1 'Playfair Display', serif; color: var(--gold); font-variant-numeric: tabular-nums; }
+      .stat span { font-size: 38px; color: var(--cream); }
+      .girder { position: absolute; right: 110px; top: 370px; width: 680px; height: 555px; overflow: visible; }
+      .flange { fill: var(--iron); transform: scaleX(0); transform-box: fill-box; transform-origin: left; }
+      .deck-entered .flange { animation: grow .9s var(--ease) both; }
+      @keyframes grow { to { transform: none; } }
+      .member { stroke: var(--iron); stroke-width: 14; stroke-linecap: square; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke .6s; }
+      .deck-entered .member { animation: tower-draw .8s var(--ease-io) calc(.5s + var(--i) * .08s) forwards; }
+      html[data-step="1"] .member, html[data-step="2"] .member, html[data-step="3"] .member { stroke: var(--iron-light); }
+      .rivet { fill: #e0c49a; transform: scale(0); transform-box: fill-box; transform-origin: center; transition: transform .35s var(--ease); transition-delay: calc(var(--i) * 6ms); }
+      html[data-step="2"] .rivet, html[data-step="3"] .rivet { transform: none; }
+      .caption { opacity: 0; transition: opacity .6s .3s; font: 700 30px Inter, sans-serif; fill: var(--gold); }
+      html[data-step="3"] .caption { opacity: 1; }
+    </style>
+    <div class="bg"></div>
+    <span class="kicker">La structure</span>
+    <h2 class="serif">Une dentelle de fer</h2>
+    <div class="stats">
+      <div class="stat" data-value="18038"><strong>0</strong><span>pièces de fer puddlé</span></div>
+      <div class="stat" data-value="2500000"><strong>0</strong><span>rivets pour les assembler</span></div>
+      <div class="stat" data-value="7300"><strong>0</strong><span>tonnes pour la charpente métallique</span></div>
+    </div>
+    <svg class="girder" viewBox="0 0 760 620" aria-hidden="true">
+      <g class="members"></g>
+      <rect class="flange" x="20" y="40" width="720" height="34" rx="3"/>
+      <rect class="flange" x="20" y="546" width="720" height="34" rx="3" style="animation-delay: .15s"/>
+      <g class="rivets"></g>
+      <text class="caption" x="380" y="616" text-anchor="middle">une seule poutre parmi des milliers</text>
+    </svg>
+    <script>
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const members = document.querySelector('.members');
+      const rivets = document.querySelector('.rivets');
+      const posts = [28, 206, 380, 554, 732];
+      const addLine = (x1, y1, x2, y2, i) => {
+        const line = document.createElementNS(SVG_NS, 'line');
+        Object.entries({ x1, y1, x2, y2, pathLength: 1, class: 'member' }).forEach(([k, v]) => line.setAttribute(k, v));
+        line.style.setProperty('--i', i);
+        members.append(line);
+      };
+      let order = 0;
+      posts.forEach((x) => addLine(x, 74, x, 546, order++));
+      posts.slice(0, -1).forEach((x, bay) => {
+        addLine(x, 74, posts[bay + 1], 546, order++);
+        addLine(posts[bay + 1], 74, x, 546, order++);
+      });
+
+      let rivetIndex = 0;
+      const addRivet = (cx, cy) => {
+        const rivet = document.createElementNS(SVG_NS, 'circle');
+        Object.entries({ cx, cy, r: 5, class: 'rivet' }).forEach(([k, v]) => rivet.setAttribute(k, v));
+        rivet.style.setProperty('--i', rivetIndex++);
+        rivets.append(rivet);
+      };
+      for (let x = 34; x <= 726; x += 24) {
+        [50, 64, 556, 570].forEach((y) => addRivet(x, y));
+      }
+      posts.forEach((x) => [100, 310, 520].forEach((y) => addRivet(x, y)));
+
+      const stats = [...document.querySelectorAll('.stat')];
+      deck.onStep((step, direction) => {
+        stats.forEach((stat, i) => {
+          const reached = step >= i + 1;
+          const value = Number(stat.dataset.value);
+          const counter = stat.querySelector('strong');
+          stat.classList.toggle('is-on', reached);
+          if (!reached) return;
+          if (step === i + 1 && direction === 'forward') {
+            tween(0, value, 1400, (v) => (counter.textContent = formatNumber(v)));
+          } else {
+            counter.textContent = formatNumber(value);
+          }
+        });
+      });
+    </script>
+    <aside data-notes>Clic 1 : 18 038 pièces, toutes dessinées une à une. Clic 2 : 2,5 millions de rivets, posés à chaud. Clic 3 : 7 300 tonnes pour la seule charpente métallique (environ 10 100 tonnes au total).</aside>
+  </template>
+
+  <!-- 5 · La peinture en trois nuances -->
+  <template data-slide data-steps="2" data-transition="slide">
+    <style>
+      .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #cfd8e3 0%, #e9e2d3 100%); }
+      .tower { position: absolute; left: 200px; top: 120px; height: 900px; overflow: visible; }
+      .tower .tower-line { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+      .tower .tower-fill { opacity: 1; animation: none; }
+      .brush { opacity: 0; transition: opacity .3s; }
+      .copy { position: absolute; left: 760px; top: 150px; width: 1020px; color: #2a2118; }
+      .copy .kicker { position: static; color: var(--iron-dark); }
+      h2 { margin: 26px 0 0; font-size: 110px; line-height: 1; font-weight: 900; color: #2a2118; }
+      .lead { margin: 22px 0 0; font-size: 40px; color: #5a4a3a; }
+      .swatches { margin-top: 56px; display: grid; gap: 18px; opacity: 0; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      html[data-step="1"] .swatches, html[data-step="2"] .swatches { opacity: 1; transform: none; transition-delay: 1.2s; }
+      .swatch { display: flex; align-items: center; gap: 24px; font-size: 36px; }
+      .swatch i { flex-shrink: 0; width: 72px; height: 72px; border-radius: 14px; box-shadow: inset 0 0 0 2px rgba(0,0,0,.1); }
+      .numbers { position: absolute; left: 760px; top: 820px; display: flex; gap: 90px; opacity: 0; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      html[data-step="2"] .numbers { opacity: 1; transform: none; }
+      .numbers strong { display: block; font: 900 90px/1 'Playfair Display', serif; color: var(--iron-dark); }
+      .numbers span { font-size: 34px; color: #5a4a3a; }
+    </style>
+    <div class="bg"></div>
+    <svg class="tower" viewBox="-70 -335 140 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="t5-paint" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#4f3a29"/><stop offset=".34" stop-color="#4f3a29"/>
+          <stop offset=".34" stop-color="#6e5139"/><stop offset=".67" stop-color="#6e5139"/>
+          <stop offset=".67" stop-color="#94724e"/><stop offset="1" stop-color="#94724e"/>
+        </linearGradient>
+        <clipPath id="t5-clip"><rect id="t5-rect" x="-70" y="0" width="140" height="0"/></clipPath>
+      </defs>
+      <g class="raw"></g>
+      <g class="painted" clip-path="url(#t5-clip)"></g>
+      <rect class="brush" x="-66" y="-2" width="132" height="2" rx="1" fill="#f2c14e"/>
+    </svg>
+    <div class="copy">
+      <span class="kicker">L'entretien</span>
+      <h2 class="serif">Repeinte à la main</h2>
+      <p class="lead">Environ tous les 7 ans, pour protéger le fer de la rouille.</p>
+      <div class="swatches">
+        <div class="swatch"><i style="background:#94724e"></i>En haut, la teinte la plus claire</div>
+        <div class="swatch"><i style="background:#6e5139"></i>Au milieu, une teinte intermédiaire</div>
+        <div class="swatch"><i style="background:#4f3a29"></i>En bas, la plus foncée : vue du sol, la tour paraît d'une seule couleur</div>
+      </div>
+    </div>
+    <div class="numbers">
+      <div><strong>≈ 60 t</strong><span>de peinture par campagne</span></div>
+      <div><strong>≈ 7 ans</strong><span>entre deux campagnes</span></div>
+    </div>
+    <script>
+      document.querySelector('.raw').innerHTML = eiffelTower('t5r', '#8d949c', 'rgba(0,0,0,.25)');
+      document.querySelector('.painted').innerHTML = eiffelTower('t5p', 'url(#t5-paint)', 'none');
+      const rect = document.querySelector('#t5-rect');
+      const brush = document.querySelector('.brush');
+      let painted = 0;
+      let stop = () => {};
+      deck.onStep((step) => {
+        const target = step >= 1 ? 331 : 0;
+        stop();
+        brush.style.opacity = target !== painted ? 1 : 0;
+        stop = tween(painted, target, 1800, (value) => {
+          painted = value;
+          rect.setAttribute('y', -value);
+          rect.setAttribute('height', value);
+          brush.setAttribute('y', -value - 1);
+          if (value === target) brush.style.opacity = 0;
+        });
+      });
+    </script>
+    <aside data-notes>Clic 1 : la peinture monte, en trois nuances dégradées. Clic 2 : environ 60 tonnes de peinture à chaque campagne, appliquées au pinceau, environ tous les sept ans.</aside>
+  </template>
+
+  <!-- 6 · Les visiteurs en pictogrammes -->
+  <template data-slide>
+    <style>
+      .bg { position: absolute; inset: 0; background: var(--cream); }
+      .kicker { color: var(--iron-dark); }
+      .big { position: absolute; left: 140px; top: 150px; display: flex; align-items: baseline; gap: 28px; color: #2a2118; }
+      .big strong { font: 900 170px/1 'Playfair Display', serif; font-variant-numeric: tabular-nums; }
+      .big span { font-size: 44px; color: #5a4a3a; }
+      .grid { position: absolute; left: 140px; top: 440px; display: grid; grid-template-columns: repeat(15, 64px); gap: 26px 42px; }
+      .person { width: 64px; height: 96px; fill: var(--iron); opacity: 0; transform: translateY(30px) scale(.6); }
+      .deck-entered .person { animation: pop .6s var(--ease) calc(.6s + var(--i) * 30ms) both; }
+      @keyframes pop { to { opacity: 1; transform: none; } }
+      .legend { position: absolute; left: 140px; top: 940px; margin: 0; display: flex; align-items: center; gap: 16px; font-size: 34px; color: #5a4a3a; opacity: 0; }
+      .legend svg { width: 32px; height: 48px; fill: var(--iron); }
+      .deck-entered .legend { animation: fade-in .8s ease 2.6s both; }
+    </style>
+    <div class="bg"></div>
+    <span class="kicker">Le succès</span>
+    <div class="big"><strong>0</strong><span>visiteurs par an, environ</span></div>
+    <div class="grid"></div>
+    <p class="legend"><svg viewBox="0 0 40 60"><circle cx="20" cy="10" r="9"/><path d="M6 60V33a14 14 0 0 1 28 0V60z"/></svg>1 silhouette = 100 000 visiteurs</p>
+    <script>
+      const grid = document.querySelector('.grid');
+      for (let i = 0; i < 60; i++) {
+        grid.insertAdjacentHTML('beforeend',
+          `<svg class="person" style="--i:${i}" viewBox="0 0 40 60"><circle cx="20" cy="10" r="9"/><path d="M6 60V33a14 14 0 0 1 28 0V60z"/></svg>`);
+      }
+      const counter = document.querySelector('.big strong');
+      deck.onEnter(() => tween(0, 6000000, 2400, (value) => (counter.textContent = formatNumber(value))));
+    </script>
+    <aside data-notes>Environ 6 millions de visiteurs par an ces dernières années, venus du monde entier. Chaque silhouette représente 100 000 personnes.</aside>
+  </template>
+
+  <!-- 7 · Fin : la tour scintille dans la nuit -->
+  <template data-slide>
+    <style>
+      .sky { position: absolute; inset: 0; background: linear-gradient(180deg, #070b18 0%, #141d38 70%, #243056 100%); }
+      .stars { position: absolute; inset: 0; }
+      .star { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; opacity: .15; animation: twinkle 3s ease-in-out infinite; }
+      @keyframes twinkle { 50% { opacity: .85; } }
+      .skyline { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 200px; }
+      .tower { position: absolute; right: 260px; top: 150px; height: 900px; overflow: visible; }
+      .sparkle { fill: #fff8dc; opacity: 0; animation: sparkle var(--t) ease-in-out var(--d) infinite; }
+      @keyframes sparkle { 50% { opacity: 1; } }
+      .beam {
+        position: absolute; left: 1475px; top: 189px; width: 1300px; height: 80px; transform-origin: 0 50%;
+        background: linear-gradient(90deg, rgba(255,226,150,.45), rgba(255,226,150,0) 80%);
+        clip-path: polygon(0 47%, 100% 0, 100% 100%, 0 53%); opacity: 0; mix-blend-mode: screen;
+      }
+      .deck-entered .beam { animation: fade-in 1s ease 2.6s forwards, sweep 12s linear 2.6s infinite; }
+      @keyframes sweep { from { transform: rotate(var(--a)); } to { transform: rotate(calc(var(--a) + 360deg)); } }
+      h2 { position: absolute; left: 140px; top: 340px; margin: 0; font-size: 190px; font-weight: 900; opacity: 0; }
+      .deck-entered h2 { animation: rise 1.2s var(--ease) .3s both; }
+      .sub { position: absolute; left: 140px; top: 590px; margin: 0; font: italic 700 60px 'Playfair Display', serif; color: var(--gold); opacity: 0; }
+      .deck-entered .sub { animation: rise 1s var(--ease) .8s both; }
+    </style>
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <svg class="tower" viewBox="-70 -335 140 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="t7-night" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#3a2a1c"/><stop offset="1" stop-color="#7d5a33"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <svg class="skyline" viewBox="0 0 1920 200" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <div class="beam" style="--a: 200deg"></div>
+    <div class="beam" style="--a: 20deg"></div>
+    <h2 class="serif">Merci !</h2>
+    <p class="sub">Des questions ?</p>
+    <script>
+      addStars(document.querySelector('.stars'), 140, 70);
+      const tower = document.querySelector('.tower');
+      tower.insertAdjacentHTML('beforeend', eiffelTower('t7', 'url(#t7-night)', '#f2c14e'));
+
+      // Sparkles: random points that fall inside the tower's silhouette.
+      const shape = tower.querySelector('.tower-fill path');
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      let placed = 0;
+      for (let tries = 0; placed < 160 && tries < 4000; tries++) {
+        const x = -62 + Math.random() * 124;
+        const y = -300 * Math.pow(Math.random(), .7);
+        if (!shape.isPointInFill(new DOMPoint(x, y))) continue;
+        const dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('cx', x);
+        dot.setAttribute('cy', y);
+        dot.setAttribute('r', .9 + Math.random() * .8);
+        dot.setAttribute('class', 'sparkle');
+        dot.style.setProperty('--t', `${0.6 + Math.random() * 0.9}s`);
+        dot.style.setProperty('--d', `${2.4 + Math.random() * 1.5}s`);
+        tower.append(dot);
+        placed++;
+      }
+
+      const skyline = document.querySelector('.skyline');
+      let x = 0;
+      while (x < 1920) {
+        const width = 40 + Math.random() * 90;
+        const height = 50 + Math.random() * 110;
+        skyline.insertAdjacentHTML('beforeend', `<rect x="${x}" y="${200 - height}" width="${width}" height="${height}" fill="#0a0f1f"/>`);
+        x += width - 2;
+      }
+    </script>
+    <aside data-notes>Chaque soir, la tour scintille pendant cinq minutes au début de chaque heure. Chiffres issus des données publiées par la Société d'exploitation de la tour Eiffel (toureiffel.paris) ; vérifie-les avant une présentation officielle.</aside>
+  </template>
+</body>
+</html>

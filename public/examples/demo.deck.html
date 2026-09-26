@@ -15,278 +15,444 @@
     <style>
       :root {
         --bg: #07070c;
+        --panel: #12121c;
+        --panel-2: #1a1a28;
+        --line: #2a2a3c;
         --ink: #f4f3fa;
         --muted: #8f8da3;
         --violet: #8b7bff;
         --mint: #3de0c5;
+        --coral: #ff7a8a;
+        --amber: #ffc85c;
         --ease: cubic-bezier(.22, 1, .36, 1);
         --ease-io: cubic-bezier(.65, 0, .35, 1);
       }
-      body {
-        background: var(--bg);
-        color: var(--ink);
-        font-family: Inter, system-ui, sans-serif;
-      }
+      body { background: var(--bg); color: var(--ink); font-family: Inter, system-ui, sans-serif; }
       .display { font-family: 'Space Grotesk', Inter, sans-serif; letter-spacing: -0.03em; }
       .kicker {
         position: absolute; top: 96px; left: 140px;
-        font: 600 26px/1 Inter, sans-serif; letter-spacing: .22em; text-transform: uppercase;
-        color: var(--mint);
+        font: 600 26px/1 Inter, sans-serif; letter-spacing: .22em; text-transform: uppercase; color: var(--mint);
       }
+      .dots-bg { position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.07) 1.5px, transparent 1.5px); background-size: 48px 48px; }
+
+      /* The deck's recurring motif: a miniature animated slide, drawn in % so it fits any frame. */
+      .mini { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #221a52, #0c2b2c); }
+      .mini .m-orb { position: absolute; left: -12%; top: -30%; width: 55%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(139,123,255,.8), transparent 70%); animation: orb 6s ease-in-out infinite alternate; }
+      .mini .m-title { position: absolute; left: 8%; top: 30%; width: 44%; height: 9%; border-radius: 99px; background: var(--ink); }
+      .mini .m-sub { position: absolute; left: 8%; top: 46%; width: 28%; height: 5%; border-radius: 99px; background: rgba(244,243,250,.45); }
+      .mini .m-bars { position: absolute; right: 8%; bottom: 14%; width: 34%; height: 52%; display: flex; align-items: flex-end; gap: 8%; }
+      .mini .m-bars i { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(var(--mint), var(--violet)); transform-origin: bottom; animation: bar 2.4s var(--ease) infinite alternate; }
+      .mini .m-bars i:nth-child(1) { height: 35%; }
+      .mini .m-bars i:nth-child(2) { height: 60%; animation-delay: .2s; }
+      .mini .m-bars i:nth-child(3) { height: 45%; animation-delay: .4s; }
+      .mini .m-bars i:nth-child(4) { height: 85%; animation-delay: .6s; }
+      .mini.v2 { background: linear-gradient(135deg, #3a1530, #1b1640); }
+      .mini.v3 { background: linear-gradient(135deg, #0d2f3a, #102015); }
+      .mini.v4 { background: linear-gradient(135deg, #2f2410, #1c1236); }
+      .mini.v5 { background: linear-gradient(135deg, #14203f, #301a3a); }
+      @keyframes orb { to { transform: translate(30%, 25%) scale(1.2); } }
+      @keyframes bar { from { transform: scaleY(.55); } }
+
+      @keyframes rise { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: none; } }
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
       }
     </style>
+    <script>
+      window.miniSlide = (variant = '') =>
+        `<div class="mini ${variant}"><div class="m-orb"></div><div class="m-title"></div><div class="m-sub"></div><div class="m-bars"><i></i><i></i><i></i><i></i></div></div>`;
+    </script>
   </template>
 
-  <!-- 1 · Titre -->
+  <!-- 1 · Titre : un éventail de slides animées -->
   <template data-slide data-transition="none">
     <style>
-      .blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: .55; }
-      .b1 { width: 900px; height: 900px; left: -200px; top: -250px; background: var(--violet); animation: drift 14s var(--ease-io) infinite alternate; }
-      .b2 { width: 800px; height: 800px; right: -220px; bottom: -300px; background: var(--mint); opacity: .35; animation: drift 11s var(--ease-io) infinite alternate-reverse; }
-      @keyframes drift { to { transform: translate(180px, 120px) scale(1.15); } }
-
-      .title {
-        position: absolute; left: 140px; top: 330px; margin: 0;
-        font-size: 230px; line-height: .9; font-weight: 700;
-      }
-      .char { display: inline-block; opacity: 0; transform: translateY(120px) rotate(8deg); }
-      .deck-entered .char { animation: rise 1.1s var(--ease) calc(300ms + var(--i) * 45ms) both; }
-      @keyframes rise { to { opacity: 1; transform: none; } }
-
-      .rule { position: absolute; left: 140px; top: 640px; width: 900px; height: 4px; background: linear-gradient(90deg, var(--violet), var(--mint)); transform: scaleX(0); transform-origin: left; }
-      .deck-entered .rule { animation: grow 1.2s var(--ease) 1s both; }
-      @keyframes grow { to { transform: scaleX(1); } }
-
-      .subtitle { position: absolute; left: 140px; top: 690px; margin: 0; font-size: 48px; color: var(--muted); opacity: 0; }
-      .deck-entered .subtitle { animation: fade-up 1s var(--ease) 1.4s both; }
-      @keyframes fade-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
-
-      .hint { position: absolute; right: 140px; bottom: 90px; margin: 0; font-size: 26px; color: var(--muted); opacity: 0; }
-      .deck-entered .hint { animation: fade-up 1s var(--ease) 2.4s both, pulse 2.4s ease-in-out 3.4s infinite; }
-      @keyframes pulse { 50% { opacity: .4; } }
+      .glow { position: absolute; right: -200px; top: 100px; width: 1100px; height: 1100px; border-radius: 50%; background: radial-gradient(circle, rgba(139,123,255,.28), transparent 65%); }
+      h1 { position: absolute; left: 140px; top: 300px; margin: 0; font-size: 210px; line-height: .9; font-weight: 700; }
+      .char { display: inline-block; opacity: 0; transform: translateY(110px) rotate(8deg); }
+      .deck-entered .char { animation: char-in 1.1s var(--ease) calc(.3s + var(--i) * .05s) both; }
+      @keyframes char-in { to { opacity: 1; transform: none; } }
+      .sub { position: absolute; left: 140px; top: 720px; margin: 0; width: 760px; font-size: 44px; line-height: 1.3; color: var(--muted); opacity: 0; }
+      .sub strong { color: var(--ink); font-weight: 600; }
+      .deck-entered .sub { animation: rise 1s var(--ease) 1.2s both; }
+      .fan { position: absolute; left: 1150px; top: 380px; width: 520px; height: 292px; }
+      .card { position: absolute; inset: 0; transform-origin: 50% 190%; opacity: 0; box-shadow: 0 30px 60px rgba(0,0,0,.5); border-radius: 12px; }
+      .deck-entered .card { animation: fan 1.3s var(--ease) calc(.6s + var(--i) * .1s) forwards; }
+      @keyframes fan { from { opacity: 0; transform: translateY(80px) rotate(0); } to { opacity: 1; transform: rotate(var(--r)); } }
+      .play { position: absolute; left: 1350px; top: 466px; width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--mint)); display: grid; place-items: center; opacity: 0; box-shadow: 0 0 0 0 rgba(61,224,197,.5); }
+      .play::after { content: ''; margin-left: 10px; border-style: solid; border-width: 24px 0 24px 40px; border-color: transparent transparent transparent #0b0b10; }
+      .deck-entered .play { animation: fade-in .6s ease 1.9s both, pulse 2.2s ease-out 2.6s infinite; }
+      @keyframes pulse { to { box-shadow: 0 0 0 44px rgba(61,224,197,0); } }
     </style>
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <h1 class="title display" data-split>Motion Deck</h1>
-    <div class="rule"></div>
-    <p class="subtitle">Des slides qui bougent. Écrites par Claude.</p>
-    <p class="hint">Appuie sur espace →</p>
+    <div class="dots-bg"></div>
+    <div class="glow"></div>
+    <h1 class="display" data-split>Motion<br>Deck</h1>
+    <p class="sub">Des présentations en <strong>motion design</strong>, écrites par Claude, jouées comme dans PowerPoint.</p>
+    <div class="fan"></div>
+    <div class="play"></div>
     <script>
-      document.querySelectorAll('[data-split]').forEach((el) => {
-        const text = el.textContent;
-        el.textContent = '';
-        [...text].forEach((char, i) => {
-          const span = document.createElement('span');
-          span.className = 'char';
-          span.style.setProperty('--i', i);
-          span.textContent = char === ' ' ? ' ' : char;
-          el.append(span);
-        });
+      const title = document.querySelector('[data-split]');
+      const lines = title.innerHTML.split('<br>');
+      let index = 0;
+      title.innerHTML = lines
+        .map((line) => [...line].map((char) => `<span class="char" style="--i:${index++}">${char}</span>`).join(''))
+        .join('<br>');
+
+      const fan = document.querySelector('.fan');
+      [['v2', -26], ['v3', -13], ['v4', 13], ['v5', 26], ['', 0]].forEach(([variant, angle], i) => {
+        fan.insertAdjacentHTML('beforeend', `<div class="card" style="--r:${angle}deg; --i:${i}">${miniSlide(variant)}</div>`);
       });
     </script>
-    <aside data-notes>Bienvenue. Tout ce que vous voyez est du HTML, du CSS et du JavaScript écrits à la main par Claude.</aside>
+    <aside data-notes>Bienvenue. Tout ce que vous voyez est du HTML, du CSS et du JavaScript écrits par Claude, puis joués par Motion Deck.</aside>
   </template>
 
-  <!-- 2 · Le constat (3 animations au clic en CSS pur) -->
-  <template data-slide data-steps="3" data-transition="slide">
-    <style>
-      h2 { position: absolute; left: 140px; top: 160px; margin: 0; font-size: 110px; font-weight: 700; }
-      .cards { position: absolute; left: 140px; right: 140px; top: 440px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; }
-      .card {
-        padding: 56px 48px; border-radius: 28px; background: #12121c; border: 2px solid #22222f;
-        opacity: 0; transform: translateY(80px) scale(.96);
-        transition: opacity .8s var(--ease), transform .8s var(--ease), border-color .6s;
-      }
-      .card .n { font: 700 72px/1 'Space Grotesk', sans-serif; color: var(--violet); transition: color .6s; }
-      .card p { margin: 28px 0 0; font-size: 42px; line-height: 1.2; }
-      html[data-step="1"] .c1, html[data-step="2"] .c1, html[data-step="3"] .c1,
-      html[data-step="2"] .c2, html[data-step="3"] .c2,
-      html[data-step="3"] .c3 { opacity: 1; transform: none; }
-      html[data-step="3"] .c3 { border-color: var(--mint); }
-      html[data-step="3"] .c3 .n { color: var(--mint); }
-    </style>
-    <span class="kicker">Le constat</span>
-    <h2 class="display">Une présentation, c'est…</h2>
-    <div class="cards">
-      <div class="card c1"><div class="n">01</div><p>du contenu qui doit capter l'attention</p></div>
-      <div class="card c2"><div class="n">02</div><p>un rythme qu'on contrôle au clic</p></div>
-      <div class="card c3"><div class="n">03</div><p>et pourquoi pas&nbsp;: du vrai motion design</p></div>
-    </div>
-    <aside data-notes>Trois clics, trois cartes. Cette slide n'utilise que du CSS : le lecteur place l'étape sur html[data-step].</aside>
-  </template>
-
-  <!-- 3 · Les étapes pilotées en JavaScript -->
-  <template data-slide data-steps="3">
-    <style>
-      h2 { position: absolute; left: 140px; top: 170px; margin: 0; font-size: 96px; width: 760px; line-height: 1; }
-      .explain { position: absolute; left: 140px; top: 420px; width: 700px; margin: 0; font-size: 38px; line-height: 1.4; color: var(--muted); }
-      .explain code { color: var(--mint); font-size: 34px; }
-      .ring { position: absolute; right: 200px; top: 190px; width: 700px; height: 700px; }
-      .ring circle { fill: none; stroke-width: 36; }
-      .track { stroke: #1a1a26; }
-      .bar { stroke: url(#grad); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 1s var(--ease); }
-      .value { position: absolute; right: 200px; top: 190px; width: 700px; height: 700px; display: grid; place-items: center; text-align: center; }
-      .value strong { display: block; font: 700 220px/1 'Space Grotesk', sans-serif; font-variant-numeric: tabular-nums; }
-      .value strong::after { content: '%'; font-size: 90px; color: var(--muted); }
-      .value span { display: block; margin-top: 12px; font-size: 36px; color: var(--muted); transition: opacity .3s; }
-    </style>
-    <span class="kicker">Les étapes</span>
-    <h2 class="display">Chaque clic joue une étape.</h2>
-    <p class="explain">Cette slide réagit à <code>deck.onStep()</code>. Reviens en arrière avec ← : l'anneau se vide aussi.</p>
-    <svg class="ring" viewBox="0 0 700 700" aria-hidden="true">
-      <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset="1" stop-color="#3de0c5"/></linearGradient></defs>
-      <circle class="track" cx="350" cy="350" r="300"/>
-      <circle class="bar" cx="350" cy="350" r="300"/>
-    </svg>
-    <div class="value"><div><strong>0</strong><span>arrivée</span></div></div>
-    <script>
-      const LABELS = ['arrivée', 'première étape', 'deuxième étape', 'dernière étape'];
-      const bar = document.querySelector('.bar');
-      const number = document.querySelector('.value strong');
-      const label = document.querySelector('.value span');
-      const circumference = 2 * Math.PI * 300;
-      bar.style.strokeDasharray = circumference;
-      bar.style.strokeDashoffset = circumference;
-      let shown = 0;
-      let frame = 0;
-      let labelTimer = 0;
-
-      function countTo(target) {
-        cancelAnimationFrame(frame);
-        const from = shown;
-        const start = performance.now();
-        const tick = (now) => {
-          const t = Math.min((now - start) / 900, 1);
-          const eased = 1 - Math.pow(1 - t, 3);
-          shown = from + (target - from) * eased;
-          number.textContent = Math.round(shown);
-          if (t < 1) frame = requestAnimationFrame(tick);
-        };
-        frame = requestAnimationFrame(tick);
-      }
-
-      deck.onStep((step) => {
-        const ratio = step / deck.steps;
-        bar.style.strokeDashoffset = circumference * (1 - ratio);
-        countTo(ratio * 100);
-        label.style.opacity = 0;
-        clearTimeout(labelTimer);
-        labelTimer = setTimeout(() => { label.textContent = LABELS[step]; label.style.opacity = 1; }, 250);
-      });
-    </script>
-    <aside data-notes>Trois clics : l'anneau passe de 0 à 100 %. Démonstration de l'API JavaScript deck.onStep.</aside>
-  </template>
-
-  <!-- 4 · Le principe, dessiné en SVG -->
+  <!-- 2 · Avant / après : la slide figée devient vivante -->
   <template data-slide data-steps="2" data-transition="slide">
     <style>
-      h2 { position: absolute; left: 140px; top: 160px; margin: 0; font-size: 96px; }
-      svg { position: absolute; left: 0; top: 400px; width: 1920px; height: 560px; }
-      .link { fill: none; stroke: var(--violet); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; transition: stroke-dashoffset 1s var(--ease-io); }
-      .node { opacity: 0; transform: translateY(40px); transition: opacity .7s var(--ease) .5s, transform .7s var(--ease) .5s; }
-      .node rect { fill: #12121c; stroke: #2a2a3a; stroke-width: 3; }
-      .node .num { fill: var(--mint); font: 700 44px 'Space Grotesk', sans-serif; }
-      .node .txt { fill: var(--ink); font: 600 44px Inter, sans-serif; }
-      .deck-entered .n1 { opacity: 1; transform: none; transition-delay: .2s; }
-      html[data-step="1"] .l1, html[data-step="2"] .l1, html[data-step="2"] .l2 { stroke-dashoffset: 0; }
-      html[data-step="1"] .n2, html[data-step="2"] .n2, html[data-step="2"] .n3 { opacity: 1; transform: none; }
+      .note { position: absolute; left: 140px; top: 330px; width: 540px; margin: 0; font: 700 64px/1.1 'Space Grotesk', sans-serif; letter-spacing: -0.02em; opacity: 0; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+      .note em { font-style: normal; color: var(--mint); }
+      .note small { display: block; margin-top: 28px; font: 400 36px/1.4 Inter, sans-serif; letter-spacing: 0; color: var(--muted); }
+      html.deck-entered[data-step="0"] .n0, html[data-step="1"] .n1, html[data-step="2"] .n2 { opacity: 1; transform: none; transition-delay: .25s; }
+      .mock { position: absolute; left: 760px; top: 250px; width: 1020px; height: 574px; border-radius: 18px; overflow: hidden; background: #ecebe6; box-shadow: 0 40px 80px rgba(0,0,0,.5); transition: background .9s var(--ease); }
+      html[data-step="1"] .mock, html[data-step="2"] .mock { background: linear-gradient(135deg, #1d1745, #0c2a2b); }
+      .mock-title { position: absolute; left: 64px; top: 52px; font: 700 50px Arial, sans-serif; color: #333; transition: color .8s, font .8s; }
+      html[data-step="1"] .mock-title, html[data-step="2"] .mock-title { color: var(--ink); font-family: 'Space Grotesk', sans-serif; }
+      .bullets { position: absolute; left: 64px; top: 170px; display: grid; gap: 34px; transition: opacity .5s, transform .6s var(--ease); }
+      .bullets i { display: flex; align-items: center; gap: 22px; }
+      .bullets i::before { content: ''; width: 16px; height: 16px; border-radius: 50%; background: #888; }
+      .bullets i::after { content: ''; width: var(--w); height: 18px; border-radius: 9px; background: #b9b7b0; }
+      html[data-step="1"] .bullets, html[data-step="2"] .bullets { opacity: 0; transform: translateX(-60px); }
+      .chart { position: absolute; left: 90px; right: 90px; bottom: 70px; height: 330px; display: flex; align-items: flex-end; gap: 60px; }
+      .chart .bar { flex: 1; height: var(--h); border-radius: 12px 12px 0 0; background: linear-gradient(var(--mint), var(--violet)); transform: scaleY(0); transform-origin: bottom; transition: transform 1s var(--ease); transition-delay: calc(.3s + var(--i) * .12s); }
+      html[data-step="1"] .bar, html[data-step="2"] .bar { transform: none; }
+      .trend { position: absolute; left: 90px; right: 90px; bottom: 70px; height: 330px; overflow: visible; }
+      .trend path { fill: none; stroke: var(--amber); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.2s var(--ease-io); }
+      html[data-step="2"] .trend path { stroke-dashoffset: 0; }
+      .badge { position: absolute; right: 70px; top: 50px; padding: 14px 26px; border-radius: 99px; background: var(--amber); color: #1a1405; font: 700 44px 'Space Grotesk', sans-serif; opacity: 0; transform: scale(.4); transition: opacity .4s, transform .6s var(--ease); }
+      html[data-step="2"] .badge { opacity: 1; transform: none; transition-delay: 1s; }
+      .fictional { position: absolute; right: 24px; bottom: 16px; font-size: 20px; color: #888; }
     </style>
-    <span class="kicker">Le principe</span>
-    <h2 class="display">Trois gestes. C'est tout.</h2>
-    <svg viewBox="0 0 1920 560" aria-hidden="true">
-      <path class="link l1" d="M 560 240 C 610 150, 670 150, 720 240"/>
-      <path class="link l2" d="M 1140 240 C 1190 330, 1250 330, 1300 240"/>
-      <g class="node n1"><rect x="140" y="130" width="420" height="220" rx="28"/><text class="num" x="190" y="210">01</text><text class="txt" x="190" y="295">Claude écrit</text></g>
-      <g class="node n2"><rect x="720" y="130" width="420" height="220" rx="28"/><text class="num" x="770" y="210">02</text><text class="txt" x="770" y="295">Tu glisses</text></g>
-      <g class="node n3"><rect x="1300" y="130" width="420" height="220" rx="28"/><text class="num" x="1350" y="210">03</text><text class="txt" x="1350" y="295">Tu présentes</text></g>
-    </svg>
-    <aside data-notes>Les liens se dessinent au clic grâce à stroke-dashoffset, piloté uniquement par html[data-step].</aside>
-  </template>
-
-  <!-- 5 · Canvas + citation -->
-  <template data-slide>
-    <style>
-      canvas { position: absolute; inset: 0; }
-      blockquote { position: absolute; left: 240px; right: 240px; top: 330px; margin: 0; font: 700 84px/1.12 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
-      .w { display: inline-block; opacity: 0; filter: blur(12px); transform: translateY(24px); }
-      .deck-entered .w { animation: focus .9s var(--ease) calc(200ms + var(--i) * 70ms) both; }
-      .accent { color: var(--mint); }
-      @keyframes focus { to { opacity: 1; filter: none; transform: none; } }
-    </style>
-    <canvas width="1920" height="1080"></canvas>
-    <blockquote data-words>Chaque slide est une petite page web. Tout ce que le navigateur sait faire, <span class="accent">tes slides le peuvent.</span></blockquote>
-    <script>
-      // Split words (keeping the accent span) so they can focus in one by one.
-      let index = 0;
-      const wrapWords = (node) => {
-        [...node.childNodes].forEach((child) => {
-          if (child.nodeType !== Node.TEXT_NODE) return wrapWords(child);
-          const fragment = document.createDocumentFragment();
-          child.textContent.split(/(\s+)/).forEach((part) => {
-            if (!part.trim()) return fragment.append(part);
-            const span = document.createElement('span');
-            span.className = 'w';
-            span.style.setProperty('--i', index++);
-            span.textContent = part;
-            fragment.append(span);
-          });
-          child.replaceWith(fragment);
-        });
-      };
-      wrapWords(document.querySelector('[data-words]'));
-
-      const canvas = document.querySelector('canvas');
-      const ctx = canvas.getContext('2d');
-      const particles = Array.from({ length: 180 }, () => ({
-        x: Math.random() * 1920, y: Math.random() * 1080,
-        r: Math.random() * 2.4 + 0.6, speed: Math.random() * 0.6 + 0.2, phase: Math.random() * Math.PI * 2,
-      }));
-      const draw = (time) => {
-        ctx.clearRect(0, 0, 1920, 1080);
-        for (const p of particles) {
-          p.x += p.speed;
-          p.y += Math.sin(time / 1400 + p.phase) * 0.35;
-          if (p.x > 1930) p.x = -10;
-          const glow = 0.25 + 0.35 * Math.sin(time / 900 + p.phase) ** 2;
-          ctx.fillStyle = `rgba(139, 123, 255, ${glow})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        requestAnimationFrame(draw);
-      };
-      requestAnimationFrame(draw);
-    </script>
-    <aside data-notes>Un champ de particules en Canvas tourne en boucle derrière une citation dont les mots apparaissent un par un.</aside>
-  </template>
-
-  <!-- 6 · Fin -->
-  <template data-slide>
-    <style>
-      h2 { position: absolute; left: 0; right: 0; top: 280px; margin: 0; text-align: center; font-size: 170px; font-weight: 700; opacity: 0; }
-      .deck-entered h2 { animation: zoom 1.2s var(--ease) .2s both; }
-      @keyframes zoom { from { opacity: 0; transform: scale(.85); letter-spacing: .1em; } to { opacity: 1; transform: none; } }
-      .keys { position: absolute; left: 0; right: 0; top: 620px; display: flex; justify-content: center; gap: 56px; }
-      .key { text-align: center; opacity: 0; transform: translateY(40px); }
-      .deck-entered .key { animation: pop .8s var(--ease) calc(900ms + var(--i) * 120ms) both; }
-      @keyframes pop { to { opacity: 1; transform: none; } }
-      kbd {
-        display: inline-block; min-width: 120px; padding: 22px 30px; border-radius: 18px;
-        background: #14141f; border: 2px solid #2c2c3c; border-bottom-width: 8px;
-        font: 700 40px 'Space Grotesk', sans-serif; color: var(--ink);
-      }
-      .key p { margin: 22px 0 0; font-size: 30px; color: var(--muted); }
-    </style>
-    <h2 class="display">À toi de jouer.</h2>
-    <div class="keys">
-      <div class="key" style="--i:0"><kbd>Espace</kbd><p>avancer</p></div>
-      <div class="key" style="--i:1"><kbd>←</kbd><p>reculer</p></div>
-      <div class="key" style="--i:2"><kbd>F</kbd><p>plein écran</p></div>
-      <div class="key" style="--i:3"><kbd>Échap</kbd><p>quitter</p></div>
+    <span class="kicker">Avant / après</span>
+    <p class="note n0">Une slide classique : <em>du texte, figé.</em><small>On la lit, on l'oublie.</small></p>
+    <p class="note n1">La même idée, <em>en mouvement.</em><small>On la comprend d'un coup d'œil.</small></p>
+    <p class="note n2">Chaque clic ajoute <em>une couche du récit.</em><small>Ici, la tendance, puis le chiffre clé.</small></p>
+    <div class="mock">
+      <div class="mock-title">Résultats du trimestre</div>
+      <div class="bullets"><i style="--w: 560px"></i><i style="--w: 480px"></i><i style="--w: 620px"></i><i style="--w: 400px"></i></div>
+      <div class="chart">
+        <div class="bar" style="--h: 38%; --i: 0"></div>
+        <div class="bar" style="--h: 52%; --i: 1"></div>
+        <div class="bar" style="--h: 47%; --i: 2"></div>
+        <div class="bar" style="--h: 88%; --i: 3"></div>
+      </div>
+      <svg class="trend" viewBox="0 0 840 330" preserveAspectRatio="none" aria-hidden="true">
+        <path pathLength="1" d="M90 190 L300 140 L520 160 L750 20"/>
+      </svg>
+      <div class="badge">+38 %</div>
+      <span class="fictional">données fictives</span>
     </div>
-    <aside data-notes>Copie le prompt depuis l'accueil, colle-le dans Claude avec ton sujet, et glisse le fichier obtenu dans Motion Deck.</aside>
+    <aside data-notes>Arrivée : une slide classique, grise et figée. Clic 1 : les puces deviennent un graphique qui pousse. Clic 2 : la tendance se trace et le chiffre clé apparaît.</aside>
+  </template>
+
+  <!-- 3 · De l'idée à l'écran, en trois stations dessinées -->
+  <template data-slide data-steps="3">
+    <style>
+      h2 { position: absolute; left: 140px; top: 150px; margin: 0; font-size: 96px; font-weight: 700; }
+      .station { position: absolute; top: 330px; width: 440px; height: 440px; opacity: .3; filter: saturate(.2); transition: opacity .7s var(--ease), filter .7s; }
+      .s1 { left: 140px; } .s2 { left: 740px; } .s3 { left: 1340px; }
+      html[data-step="1"] .s1, html[data-step="2"] .s1, html[data-step="3"] .s1,
+      html[data-step="2"] .s2, html[data-step="3"] .s2, html[data-step="3"] .s3 { opacity: 1; filter: none; }
+      .caption { position: absolute; top: 820px; width: 440px; font-size: 36px; line-height: 1.3; color: var(--muted); }
+      .caption strong { display: block; color: var(--ink); font: 700 40px 'Space Grotesk', sans-serif; }
+      .panel { position: absolute; border-radius: 18px; background: var(--panel); border: 2px solid var(--line); overflow: hidden; }
+      .panel .bar-top { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: var(--panel-2); }
+      .panel .bar-top i { width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+
+      .chat { inset: 0; }
+      .bubble-user { position: absolute; right: 22px; top: 70px; padding: 14px 20px; border-radius: 18px 18px 4px 18px; background: var(--violet); color: #0b0b10; font-size: 24px; font-weight: 600; }
+      .bubble-claude { position: absolute; left: 22px; right: 60px; top: 150px; padding: 22px; border-radius: 18px 18px 18px 4px; background: var(--panel-2); display: grid; gap: 14px; }
+      .bubble-claude i { height: 14px; width: var(--w); border-radius: 7px; background: var(--c); transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease); transition-delay: calc(.5s + var(--i) * .18s); }
+      html[data-step="1"] .bubble-claude i, html[data-step="2"] .bubble-claude i, html[data-step="3"] .bubble-claude i { transform: none; }
+
+      .browser { left: 0; right: 0; bottom: 0; height: 280px; }
+      .drop { position: absolute; left: 30px; right: 30px; top: 70px; bottom: 30px; border: 3px dashed var(--line); border-radius: 14px; transition: border-color .6s .8s, background .6s .8s; }
+      html[data-step="2"] .drop, html[data-step="3"] .drop { border-color: var(--mint); background: rgba(61,224,197,.08); }
+      .file { position: absolute; left: 160px; top: 0; width: 120px; transition: transform 1s var(--ease-io); }
+      html[data-step="2"] .file, html[data-step="3"] .file { transform: translateY(215px) scale(.8); }
+
+      .screen { position: absolute; left: 0; top: 0; width: 440px; padding: 10px; border-radius: 10px; background: #d9d8e6; }
+      .screen .mini { border-radius: 4px; opacity: 0; transition: opacity .8s .9s; }
+      html[data-step="3"] .screen .mini { opacity: 1; }
+      .screen-off { position: absolute; inset: 10px; border-radius: 4px; background: #15151f; }
+      .stand { position: absolute; left: 216px; top: 268px; width: 8px; height: 150px; background: #3a3a4e; }
+      .projector { position: absolute; left: 170px; top: 390px; width: 100px; height: 44px; border-radius: 10px; background: #2c2c3e; }
+      .projector::after { content: ''; position: absolute; left: 38px; top: 8px; width: 26px; height: 26px; border-radius: 50%; background: #4a4a60; transition: background .6s .6s; }
+      html[data-step="3"] .projector::after { background: #fff6cf; box-shadow: 0 0 30px #fff6cf; }
+      .beam { position: absolute; left: 0; top: 10px; width: 440px; height: 395px; background: linear-gradient(0deg, rgba(255,246,207,.45), rgba(255,246,207,.04)); clip-path: polygon(46% 100%, 54% 100%, 100% 56%, 0 56%); opacity: 0; transition: opacity .8s .6s; }
+      html[data-step="3"] .beam { opacity: 1; }
+
+      .arrows { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
+      .arrows path { fill: none; stroke: var(--mint); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .8s var(--ease-io); }
+      html[data-step="2"] .a1, html[data-step="3"] .a1, html[data-step="3"] .a2 { stroke-dashoffset: 0; }
+    </style>
+    <div class="dots-bg"></div>
+    <span class="kicker">Le principe</span>
+    <h2 class="display">De l'idée à l'écran.</h2>
+
+    <div class="station s1">
+      <div class="panel chat">
+        <div class="bar-top"><i></i><i></i><i></i></div>
+        <div class="bubble-user">Un exposé sur les volcans</div>
+        <div class="bubble-claude">
+          <i style="--w: 70%; --c: var(--violet); --i: 0"></i>
+          <i style="--w: 90%; --c: var(--muted); --i: 1"></i>
+          <i style="--w: 55%; --c: var(--mint); --i: 2"></i>
+          <i style="--w: 80%; --c: var(--muted); --i: 3"></i>
+          <i style="--w: 40%; --c: var(--coral); --i: 4"></i>
+          <i style="--w: 75%; --c: var(--muted); --i: 5"></i>
+        </div>
+      </div>
+    </div>
+    <div class="caption" style="left: 140px"><strong>1. Claude écrit</strong>tu colles le prompt et ton sujet</div>
+
+    <div class="station s2">
+      <div class="panel browser"><div class="bar-top"><i></i><i></i><i></i></div><div class="drop"></div></div>
+      <svg class="file" viewBox="0 0 120 150" aria-hidden="true">
+        <path d="M8 4h72l32 32v106a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z" fill="#f4f3fa"/>
+        <path d="M80 4v28a4 4 0 0 0 4 4h28" fill="#cfcde0"/>
+        <rect x="16" y="92" width="88" height="30" rx="6" fill="#8b7bff"/>
+        <text x="60" y="113" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="17" font-weight="700" fill="#0b0b10">.deck.html</text>
+      </svg>
+    </div>
+    <div class="caption" style="left: 740px"><strong>2. Tu glisses</strong>le fichier dans Motion Deck</div>
+
+    <div class="station s3">
+      <div class="beam"></div>
+      <div class="screen"><div class="screen-off"></div><div class="mini-wrap"></div></div>
+      <div class="stand"></div>
+      <div class="projector"></div>
+    </div>
+    <div class="caption" style="left: 1340px"><strong>3. Tu présentes</strong>plein écran, espace pour avancer</div>
+
+    <svg class="arrows" viewBox="0 0 1920 1080" aria-hidden="true">
+      <path class="a1" pathLength="1" d="M600 550 C640 510 680 510 720 550 m-18 -4 l18 4 l-6 -18"/>
+      <path class="a2" pathLength="1" d="M1200 550 C1240 510 1280 510 1320 550 m-18 -4 l18 4 l-6 -18"/>
+    </svg>
+    <script>
+      document.querySelector('.mini-wrap').outerHTML = miniSlide();
+    </script>
+    <aside data-notes>Trois clics, trois stations. Claude écrit le fichier à partir du prompt ; tu le glisses dans Motion Deck ; tu présentes. Aucune installation, aucune clé d'API.</aside>
+  </template>
+
+  <!-- 4 · Chaque clic : la barre d'espace et la slide qui se construit -->
+  <template data-slide data-steps="3" data-transition="slide">
+    <style>
+      h2 { position: absolute; left: 140px; top: 150px; margin: 0; font-size: 84px; font-weight: 700; }
+      .keys { position: absolute; left: 140px; top: 560px; display: flex; gap: 28px; }
+      .key { display: grid; place-items: center; height: 110px; border-radius: 22px; background: #1e1e2c; border: 2px solid #34344a; box-shadow: 0 14px 0 #0f0f18; font: 700 40px 'Space Grotesk', sans-serif; color: var(--ink); }
+      .key.space { width: 420px; }
+      .key.left { width: 110px; }
+      .key.is-pressed { animation: press .35s var(--ease); }
+      @keyframes press { 40% { transform: translateY(12px); box-shadow: 0 2px 0 #0f0f18; background: var(--violet); color: #0b0b10; } }
+      .progress { position: absolute; left: 140px; top: 740px; display: flex; gap: 18px; }
+      .progress i { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--line); transition: all .5s var(--ease); }
+      html[data-step="1"] .p1, html[data-step="2"] .p1, html[data-step="2"] .p2, html[data-step="3"] .progress i { background: var(--mint); border-color: var(--mint); }
+      .hint { position: absolute; left: 140px; top: 800px; width: 560px; margin: 0; font-size: 36px; line-height: 1.4; color: var(--muted); }
+      .board { position: absolute; left: 780px; top: 300px; width: 1000px; height: 562px; border-radius: 18px; background: var(--panel); border: 2px solid var(--line); overflow: hidden; }
+      .b-title { position: absolute; left: 60px; top: 48px; font: 700 64px 'Space Grotesk', sans-serif; opacity: 0; transform: translateY(30px); transition: all .7s var(--ease); }
+      .b-title::after { content: ''; display: block; height: 6px; margin-top: 10px; border-radius: 3px; background: var(--mint); transform: scaleX(0); transform-origin: left; transition: transform .8s var(--ease) .3s; }
+      .b-image { position: absolute; left: 60px; top: 170px; width: 460px; height: 330px; border-radius: 14px; overflow: hidden; opacity: 0; transform: translateX(-60px); transition: all .8s var(--ease); }
+      .b-chart { position: absolute; right: 60px; bottom: 62px; width: 380px; height: 300px; display: flex; align-items: flex-end; gap: 22px; }
+      .b-chart i { flex: 1; height: var(--h); border-radius: 10px 10px 0 0; background: linear-gradient(var(--amber), var(--coral)); transform: scaleY(0); transform-origin: bottom; transition: transform .9s var(--ease); transition-delay: calc(var(--i) * .1s); }
+      html[data-step="1"] .b-title, html[data-step="2"] .b-title, html[data-step="3"] .b-title { opacity: 1; transform: none; }
+      html[data-step="1"] .b-title::after, html[data-step="2"] .b-title::after, html[data-step="3"] .b-title::after { transform: none; }
+      html[data-step="2"] .b-image, html[data-step="3"] .b-image { opacity: 1; transform: none; }
+      html[data-step="3"] .b-chart i { transform: none; }
+      .sun { transform-box: fill-box; transform-origin: center; animation: sun 4s ease-in-out infinite alternate; }
+      @keyframes sun { to { transform: translateY(-14px); } }
+    </style>
+    <div class="dots-bg"></div>
+    <span class="kicker">Les étapes</span>
+    <h2 class="display">Chaque clic joue une étape.</h2>
+    <div class="keys"><div class="key left">←</div><div class="key space">Espace</div></div>
+    <div class="progress"><i class="p1"></i><i class="p2"></i><i class="p3"></i></div>
+    <p class="hint">Espace construit la slide morceau par morceau. ← la déconstruit.</p>
+    <div class="board">
+      <div class="b-title">Notre voyage</div>
+      <svg class="b-image" viewBox="0 0 460 330" aria-hidden="true">
+        <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a6b"/><stop offset="1" stop-color="#5b3f8f"/></linearGradient></defs>
+        <rect width="460" height="330" fill="url(#sky)"/>
+        <circle class="sun" cx="330" cy="120" r="46" fill="#ffd66b"/>
+        <path d="M0 330 L120 170 L200 260 L300 130 L460 330 Z" fill="#2c1f4d"/>
+        <path d="M0 330 L90 240 L170 300 L260 220 L460 330 Z" fill="#1a1433"/>
+      </svg>
+      <div class="b-chart"><i style="--h: 40%; --i: 0"></i><i style="--h: 65%; --i: 1"></i><i style="--h: 50%; --i: 2"></i><i style="--h: 90%; --i: 3"></i></div>
+    </div>
+    <script>
+      const space = document.querySelector('.key.space');
+      const left = document.querySelector('.key.left');
+      const press = (key) => {
+        key.classList.remove('is-pressed');
+        void key.offsetWidth;
+        key.classList.add('is-pressed');
+      };
+      deck.onStep((step, direction) => {
+        if (direction === 'forward') press(space);
+        if (direction === 'backward') press(left);
+      });
+    </script>
+    <aside data-notes>Trois clics : le titre, l'illustration, puis le graphique. En revenant avec la flèche gauche, la slide se déconstruit dans l'autre sens.</aside>
+  </template>
+
+  <!-- 5 · Une toile, tous les écrans -->
+  <template data-slide data-steps="2">
+    <style>
+      h2 { position: absolute; left: 140px; top: 150px; margin: 0; font-size: 96px; font-weight: 700; }
+      .device { position: absolute; opacity: 0; transform: translateY(60px) scale(.94); transition: opacity .7s var(--ease), transform .9s var(--ease); }
+      html.deck-entered .laptop, html[data-step="1"] .phone, html[data-step="2"] .phone, html[data-step="2"] .projector-screen { opacity: 1; transform: none; }
+      html.deck-entered .laptop { transition-delay: .3s; }
+      .phone { left: 140px; top: 520px; width: 200px; height: 380px; border-radius: 34px; background: #1c1c2a; border: 3px solid #3a3a52; }
+      .phone .mini { position: absolute; left: 10px; right: 10px; top: 50%; transform: translateY(-50%); border-radius: 6px; }
+      .phone::before { content: ''; position: absolute; left: 70px; top: 14px; width: 60px; height: 8px; border-radius: 4px; background: #3a3a52; }
+      .laptop { left: 420px; top: 540px; width: 640px; }
+      .laptop .lid { padding: 14px; border-radius: 18px 18px 0 0; background: #1c1c2a; border: 3px solid #3a3a52; }
+      .laptop .mini { border-radius: 4px; }
+      .laptop .base { height: 26px; margin: 0 -40px; border-radius: 0 0 18px 18px; background: #2c2c40; }
+      .projector-screen { left: 1120px; top: 360px; width: 660px; }
+      .projector-screen .frame { padding: 12px; border-radius: 6px; background: #e4e3ee; }
+      .projector-screen .mini { border-radius: 2px; }
+      .projector-screen .legs { position: relative; height: 170px; }
+      .projector-screen .legs::before, .projector-screen .legs::after { content: ''; position: absolute; top: 0; width: 8px; height: 170px; background: #3a3a52; }
+      .projector-screen .legs::before { left: 90px; transform: rotate(8deg); transform-origin: top; }
+      .projector-screen .legs::after { right: 90px; transform: rotate(-8deg); transform-origin: top; }
+      .caption { position: absolute; left: 140px; top: 960px; margin: 0; font-size: 36px; color: var(--muted); }
+      .caption strong { color: var(--mint); }
+    </style>
+    <div class="dots-bg"></div>
+    <span class="kicker">Mise à l'échelle</span>
+    <h2 class="display">Une toile, tous les écrans.</h2>
+    <div class="device phone" data-mini></div>
+    <div class="device laptop"><div class="lid" data-mini></div><div class="base"></div></div>
+    <div class="device projector-screen"><div class="frame" data-mini></div><div class="legs"></div></div>
+    <p class="caption">Chaque slide est dessinée sur une toile de <strong>1920 × 1080</strong>, mise à l'échelle automatiquement.</p>
+    <script>
+      document.querySelectorAll('[data-mini]').forEach((el) => el.insertAdjacentHTML('beforeend', miniSlide()));
+    </script>
+    <aside data-notes>Arrivée : le portable. Clic 1 : le téléphone. Clic 2 : l'écran de projection. La même slide, aux mêmes proportions, sur chaque écran.</aside>
+  </template>
+
+  <!-- 6 · Les coulisses : vue d'ensemble et vue présentateur -->
+  <template data-slide data-steps="2" data-transition="slide">
+    <style>
+      h2 { position: absolute; left: 140px; top: 150px; margin: 0; font-size: 90px; font-weight: 700; }
+      .extra { position: absolute; left: 140px; top: 870px; margin: 0; display: flex; align-items: center; gap: 18px; font-size: 36px; color: var(--muted); opacity: 0; transition: opacity .6s .6s; }
+      .extra kbd { padding: 8px 16px; border-radius: 10px; background: #1e1e2c; border: 2px solid #34344a; border-bottom-width: 6px; font: 700 30px 'Space Grotesk', sans-serif; color: var(--mint); }
+      html[data-step="2"] .extra { opacity: 1; }
+      .zone { position: absolute; top: 330px; height: 450px; border-radius: 22px; background: var(--panel); border: 2px solid var(--line); padding: 30px; opacity: .25; transform: scale(.97); transition: opacity .7s var(--ease), transform .7s var(--ease), border-color .7s; }
+      .overview { left: 140px; width: 780px; }
+      .presenter { left: 1000px; width: 780px; }
+      html[data-step="1"] .overview, html[data-step="2"] .overview, html[data-step="2"] .presenter { opacity: 1; transform: none; border-color: #3a3a55; }
+      .label { display: flex; align-items: center; gap: 16px; font: 700 36px 'Space Grotesk', sans-serif; }
+      .label kbd { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 12px; background: #1e1e2c; border: 2px solid #34344a; border-bottom-width: 6px; font: inherit; color: var(--mint); }
+      .grid { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .grid .mini { opacity: 0; transform: scale(.8); transition: opacity .5s var(--ease), transform .6s var(--ease); transition-delay: calc(.3s + var(--i) * .08s); }
+      .grid .mini.is-current { outline: 4px solid var(--violet); outline-offset: 3px; }
+      html[data-step="1"] .grid .mini, html[data-step="2"] .grid .mini { opacity: 1; transform: none; }
+      .pv { margin-top: 30px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
+      .pv .side { display: grid; gap: 14px; align-content: start; }
+      .pv .tag { font-size: 22px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+      .pv .notes { display: grid; gap: 12px; margin-top: 6px; }
+      .pv .notes i { height: 12px; border-radius: 6px; background: #34344a; width: var(--w); }
+      .timer { margin-left: auto; font: 700 44px 'Space Grotesk', monospace; color: var(--mint); font-variant-numeric: tabular-nums; }
+    </style>
+    <div class="dots-bg"></div>
+    <span class="kicker">Les coulisses</span>
+    <h2 class="display">Tout pour présenter sereinement.</h2>
+    <div class="zone overview">
+      <div class="label"><kbd>O</kbd>Vue d'ensemble</div>
+      <div class="grid"></div>
+    </div>
+    <div class="zone presenter">
+      <div class="label"><kbd>P</kbd>Vue présentateur<span class="timer">0:00</span></div>
+      <div class="pv">
+        <div data-current></div>
+        <div class="side">
+          <span class="tag">Ensuite</span>
+          <div data-next></div>
+          <span class="tag">Notes</span>
+          <div class="notes"><i style="--w: 100%"></i><i style="--w: 85%"></i><i style="--w: 92%"></i><i style="--w: 60%"></i></div>
+        </div>
+      </div>
+    </div>
+    <p class="extra"><kbd>Ctrl P</kbd>Et un export PDF, une page par slide.</p>
+    <script>
+      const grid = document.querySelector('.grid');
+      ['', 'v2', 'v3', 'v4', 'v5', ''].forEach((variant, i) => {
+        grid.insertAdjacentHTML('beforeend', miniSlide(variant));
+        const mini = grid.lastElementChild;
+        mini.style.setProperty('--i', i);
+        if (i === 3) mini.classList.add('is-current');
+      });
+      document.querySelector('[data-current]').innerHTML = miniSlide('v4');
+      document.querySelector('[data-next]').innerHTML = miniSlide('v5');
+
+      const timer = document.querySelector('.timer');
+      let started = 0;
+      let interval = 0;
+      const render = () => {
+        const seconds = Math.floor((performance.now() - started) / 1000);
+        timer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+      };
+      deck.onStep((step) => {
+        clearInterval(interval);
+        if (step < 2) return (timer.textContent = '0:00');
+        started = performance.now();
+        render();
+        interval = setInterval(render, 250);
+      });
+      deck.onLeave(() => clearInterval(interval));
+    </script>
+    <aside data-notes>Clic 1 : la touche O ouvre la grille de toutes les slides. Clic 2 : la touche P ouvre la vue présentateur dans une autre fenêtre, avec la slide suivante, les notes et un chronomètre.</aside>
+  </template>
+
+  <!-- 7 · Fin : les raccourcis s'allument un à un -->
+  <template data-slide>
+    <style>
+      .glow { position: absolute; left: 50%; top: 40%; width: 1400px; height: 900px; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgba(139,123,255,.22), transparent 65%); }
+      h2 { position: absolute; left: 0; right: 0; top: 230px; margin: 0; text-align: center; font-size: 170px; font-weight: 700; opacity: 0; }
+      .deck-entered h2 { animation: zoom 1.2s var(--ease) .2s both; }
+      @keyframes zoom { from { opacity: 0; transform: scale(.85); letter-spacing: .08em; } to { opacity: 1; transform: none; } }
+      .sub { position: absolute; left: 0; right: 0; top: 470px; margin: 0; text-align: center; font-size: 40px; color: var(--muted); opacity: 0; }
+      .deck-entered .sub { animation: fade-in 1s ease .9s both; }
+      .keys { position: absolute; left: 0; right: 0; top: 640px; display: flex; justify-content: center; gap: 40px; }
+      .key { text-align: center; opacity: 0; transform: translateY(40px); }
+      .deck-entered .key { animation: rise .8s var(--ease) calc(1.2s + var(--i) * .1s) both; }
+      kbd {
+        display: inline-grid; place-items: center; min-width: 110px; height: 110px; padding: 0 26px; border-radius: 20px;
+        background: #1e1e2c; border: 2px solid #34344a; box-shadow: 0 12px 0 #0f0f18;
+        font: 700 38px 'Space Grotesk', sans-serif; color: var(--ink);
+        animation: light 7.2s var(--ease) calc(2.4s + var(--i) * 1.2s) infinite;
+      }
+      @keyframes light {
+        0%, 14%, 100% { background: #1e1e2c; color: var(--ink); transform: none; box-shadow: 0 12px 0 #0f0f18; }
+        4% { background: var(--mint); color: #0b0b10; transform: translateY(10px); box-shadow: 0 2px 0 #0f0f18; }
+      }
+      .key p { margin: 26px 0 0; font-size: 30px; color: var(--muted); }
+    </style>
+    <div class="dots-bg"></div>
+    <div class="glow"></div>
+    <h2 class="display">À toi de jouer.</h2>
+    <p class="sub">Copie le prompt depuis l'accueil, colle-le dans Claude avec ton sujet, glisse le fichier ici.</p>
+    <div class="keys">
+      <div class="key" style="--i:0"><kbd style="--i:0">Espace</kbd><p>avancer</p></div>
+      <div class="key" style="--i:1"><kbd style="--i:1">←</kbd><p>reculer</p></div>
+      <div class="key" style="--i:2"><kbd style="--i:2">O</kbd><p>vue d'ensemble</p></div>
+      <div class="key" style="--i:3"><kbd style="--i:3">P</kbd><p>présentateur</p></div>
+      <div class="key" style="--i:4"><kbd style="--i:4">F</kbd><p>plein écran</p></div>
+      <div class="key" style="--i:5"><kbd style="--i:5">Ctrl P</kbd><p>PDF</p></div>
+    </div>
+    <aside data-notes>Les raccourcis s'allument un à un. Pour créer ta propre présentation : copie le prompt depuis l'accueil, colle-le dans Claude avec ton sujet, puis glisse le fichier obtenu dans Motion Deck.</aside>
   </template>
 </body>
 </html>

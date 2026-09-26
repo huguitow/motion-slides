@@ -13,9 +13,9 @@ describe('validateDeck', () => {
     expect(validateDeck(source)).toEqual([]);
   });
 
-  test('the demo deck has no issues', () => {
-    const demo = readFileSync(resolve('public/examples/demo.deck.html'), 'utf8');
-    expect(validateDeck(demo)).toEqual([]);
+  test.each(['demo.deck.html', 'tour-eiffel.deck.html'])('the bundled example %s has no issues', (file) => {
+    const source = readFileSync(resolve('public/examples', file), 'utf8');
+    expect(validateDeck(source)).toEqual([]);
   });
 
   test('flags a missing title', () => {

@@ -12,7 +12,7 @@ describe('demo deck', () => {
   test('follows the documented format', () => {
     expect(deck.title).toBe('Motion Deck — la démo');
     expect(deck.sharedHead).toContain('--violet');
-    expect(deck.slides.map((s) => s.steps)).toEqual([0, 3, 3, 2, 0, 0]);
+    expect(deck.slides.map((s) => s.steps)).toEqual([0, 2, 3, 3, 2, 2, 0]);
   });
 
   test('has speaker notes on every slide, kept out of the rendered markup', () => {

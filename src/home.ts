@@ -6,8 +6,14 @@ const COPIED_LABEL_MS = 2000;
 export interface HomeOptions {
   /** Called with the raw text of a deck the user picked or dropped. */
   readonly onDeckSource: (source: string, fileName: string) => void;
-  readonly demoUrl: string;
+  /** Base URL of the bundled example decks. */
+  readonly examplesUrl: string;
 }
+
+const EXAMPLES = [
+  { file: 'demo.deck.html', label: 'Voir la démo' },
+  { file: 'tour-eiffel.deck.html', label: 'Exemple : la tour Eiffel' },
+];
 
 export interface HomeHandle {
   showError(message: string): void;
@@ -34,7 +40,7 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
 
     <div class="home-actions">
       <button type="button" class="button button-primary" data-action="copy">Copier le prompt pour Claude</button>
-      <button type="button" class="button" data-action="demo">Voir la démo</button>
+      ${EXAMPLES.map((example) => `<button type="button" class="button" data-example="${example.file}">${example.label}</button>`).join('')}
     </div>
 
     <ol class="home-steps">
@@ -117,16 +123,19 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
     }
   });
 
-  find<HTMLButtonElement>('[data-action="demo"]').addEventListener('click', async () => {
-    try {
-      const response = await fetch(options.demoUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      options.onDeckSource(await response.text(), 'demo.deck.html');
-    } catch (error) {
-      console.error(error);
-      showError('Impossible de charger la démo.');
-    }
-  });
+  for (const button of element.querySelectorAll<HTMLButtonElement>('[data-example]')) {
+    const file = button.dataset.example!;
+    button.addEventListener('click', async () => {
+      try {
+        const response = await fetch(`${options.examplesUrl}${file}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        options.onDeckSource(await response.text(), file);
+      } catch (error) {
+        console.error(error);
+        showError(`Impossible de charger l'exemple « ${file} ».`);
+      }
+    });
+  }
 
   return {
     showError,

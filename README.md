@@ -34,7 +34,10 @@ La spécification complète est le prompt lui-même : [`prompt/PROMPT_CLAUDE.md`
 - `<template data-deck-head>` est injecté dans le `<head>` de chaque slide ;
 - l'étape courante est exposée sur `<html data-step="N">` et via `deck.onStep((step, direction) => …)`.
 
-Exemple complet : [`public/examples/demo.deck.html`](public/examples/demo.deck.html).
+Exemples complets (aussi accessibles depuis l'accueil) :
+
+- [`public/examples/demo.deck.html`](public/examples/demo.deck.html) : le format et ses possibilités ;
+- [`public/examples/tour-eiffel.deck.html`](public/examples/tour-eiffel.deck.html) : un exposé illustré comme le prompt le demande (identité visuelle tirée du sujet, tour dessinée en SVG, hauteur à l'échelle comparée à d'autres monuments, frise du chantier, etc.).
 
 ## Développement
 
