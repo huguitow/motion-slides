@@ -1,7 +1,7 @@
 import type { Blank } from './blank';
 import type { StagePoint } from './fit';
 import type { Position } from './navigation';
-import { TRANSITIONS, type Deck, type Slide } from './types';
+import { isDuration, TRANSITIONS, type Deck, type Slide } from './types';
 
 /** What the presenter window may trigger on the audience window: navigation and blank screens. */
 export type RemoteAction = 'next' | 'prev' | 'first' | 'last' | 'black' | 'white';
@@ -18,7 +18,8 @@ export type PresenterMessage =
   | { readonly type: 'state'; readonly deck: Deck; readonly position: Position }
   | { readonly type: 'action'; readonly action: RemoteAction }
   | { readonly type: 'laser'; readonly point: StagePoint | null }
-  | { readonly type: 'blank'; readonly blank: Blank };
+  | { readonly type: 'blank'; readonly blank: Blank }
+  | { readonly type: 'autoplay'; readonly seconds: number | null };
 
 const BLANKS: readonly Blank[] = ['none', 'black', 'white'];
 
@@ -48,6 +49,9 @@ export function parsePresenterMessage(data: unknown): PresenterMessage | null {
     case 'laser':
       if (data.point === null) return { type: 'laser', point: null };
       return isStagePoint(data.point) ? { type: 'laser', point: { x: data.point.x, y: data.point.y } } : null;
+    case 'autoplay':
+      if (data.seconds === null) return { type: 'autoplay', seconds: null };
+      return isDuration(data.seconds) ? { type: 'autoplay', seconds: data.seconds } : null;
     case 'blank': {
       const blank = BLANKS.find((value) => value === data.blank);
       return blank ? { type: 'blank', blank } : null;
@@ -88,7 +92,8 @@ function isSlide(value: unknown): value is Slide {
     typeof value.html === 'string' &&
     isIndex(value.steps) &&
     TRANSITIONS.some((transition) => transition === value.transition) &&
-    typeof value.notes === 'string'
+    typeof value.notes === 'string' &&
+    (value.duration === undefined || isDuration(value.duration))
   );
 }
 
@@ -99,6 +104,7 @@ function isDeck(value: unknown): value is Deck {
     typeof value.sharedHead === 'string' &&
     Array.isArray(value.slides) &&
     value.slides.length > 0 &&
-    value.slides.every(isSlide)
+    value.slides.every(isSlide) &&
+    (value.autoplay === undefined || value.autoplay === 'loop')
   );
 }

@@ -1,3 +1,4 @@
+import { autoplayNext, stopDurationMs, withAutoplayMeta } from '../deck/autoplay';
 import { applyBlank, type Blank } from '../deck/blank';
 import { exportFileName } from '../deck/embed';
 import { viewportPoint, type StagePoint } from '../deck/fit';
@@ -7,6 +8,8 @@ import { carryPosition, first, goTo, last, next, prev, type Position } from '../
 import { DeckParseError, parseDeck } from '../deck/parse';
 import type { Deck } from '../deck/types';
 import { validateDeck } from '../deck/validate';
+import { ICONS } from '../ui/icons';
+import { createAutoplay } from './autoplay';
 import { exportPresentation, ExportUnavailableError } from './export';
 import { watchFile } from './file-watch';
 import { openOverview, type OverviewHandle } from './overview';
@@ -70,6 +73,7 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     deck: () => deck,
     position: () => position,
     blank: () => blank,
+    autoplay: () => (autoplay.isRunning() ? autoplay.seconds() : null),
     onAction: (action) => perform(action),
     onLaser: (point) => remoteDot.show(point && toPlayerPixels(point)),
   });
@@ -90,6 +94,35 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     isLive: stopWatching !== null,
   }));
 
+  const autoplay = createAutoplay({
+    bar: dom.autoplayBar,
+    durationMs: () => stopDurationMs(deck.slides[position.slide], autoplay.seconds()),
+    onAdvance: () => moveTo(autoplayNext(position, steps)),
+    onChange: () => {
+      renderAutoplayControls();
+      presenter.publishAutoplay();
+    },
+  });
+
+  const renderAutoplayControls = () => {
+    const running = autoplay.isRunning();
+    dom.autoplayToggle.innerHTML = running ? ICONS.pause : ICONS.play;
+    dom.autoplayToggle.setAttribute('aria-pressed', String(running));
+    dom.autoplaySeconds.textContent = `${autoplay.seconds()} s`;
+  };
+
+  /**
+   * A kiosk deck auto-advances on its own. Only a change of its meta (first load, or a live edit
+   * adding or removing it) starts or stops it, so a kiosk deck paused by hand stays paused on reload.
+   */
+  function applyKiosk(previous: Deck['autoplay']): void {
+    const kiosk = deck.autoplay === 'loop';
+    dom.element.classList.toggle('is-kiosk', kiosk);
+    if (kiosk === (previous === 'loop')) return;
+    if (kiosk && !autoplay.isRunning()) autoplay.start();
+    if (!kiosk && autoplay.isRunning()) autoplay.toggle();
+  }
+
   const moveTo = (target: Position) => {
     if (target === position) return;
     const direction = target.slide >= position.slide ? 'forward' : 'backward';
@@ -98,6 +131,8 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     presenter.publish(position);
     renderHud(dom, deck, position);
     retouch.refresh();
+    // Moving by hand restarts the countdown rather than stopping auto-advance.
+    autoplay.restart();
     options.onPositionChange?.(position);
   };
 
@@ -111,6 +146,7 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
       toast.show('Fichier modifié mais illisible : la version précédente reste affichée.');
       return;
     }
+    const previousAutoplay = deck.autoplay;
     deck = reloaded;
     source = text;
     steps = stepsOf(deck);
@@ -119,6 +155,8 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     closeOverview();
     stage.invalidate();
     stage.display(deck, position, 'none', 'forward');
+    autoplay.restart();
+    applyKiosk(previousAutoplay);
     presenter.republish();
     renderHud(dom, deck, position);
     retouch.refresh();
@@ -201,6 +239,13 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
         return retouch.toggle();
       case 'laser':
         return toast.show(laser.toggle() ? 'Pointeur laser activé (L pour l’éteindre)' : 'Pointeur laser désactivé');
+      case 'autoplay':
+        autoplay.toggle();
+        return toast.show(
+          autoplay.isRunning()
+            ? `Défilement automatique : ${autoplay.seconds()} s par étape, en boucle (A pour arrêter)`
+            : 'Défilement automatique arrêté',
+        );
       case 'help':
         return overlays.toggleHelp();
       case 'black':
@@ -223,8 +268,14 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
 
   /** A single .html file with the player and the deck as it is now (reloaded version included). */
   const exportStandalone = () => {
-    exportPresentation({ source, title: deck.title, fileName: options.file.name })
-      .then(() => toast.show(`Présentation exportée : ${exportFileName(options.file.name)}`))
+    // Exported while auto-advancing: the file becomes a kiosk presentation that loops on its own.
+    const kiosk = autoplay.isRunning();
+    const exported = kiosk ? withAutoplayMeta(source) : source;
+    exportPresentation({ source: exported, title: deck.title, fileName: options.file.name })
+      .then(() => {
+        const name = exportFileName(options.file.name);
+        toast.show(kiosk ? `Exportée en mode kiosque (défilement en boucle) : ${name}` : `Présentation exportée : ${name}`);
+      })
       .catch((error: unknown) => {
         if (error instanceof ExportUnavailableError) return toast.show(error.message);
         console.error(error);
@@ -310,6 +361,18 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
   document.addEventListener('keydown', onKeyDown);
   const stopIdleWatch = watchIdle(dom.element);
 
+  dom.autoplaySeconds.addEventListener('click', () => {
+    const seconds = autoplay.cycleSeconds();
+    renderAutoplayControls();
+    toast.show(`${seconds} s par étape (sauf les slides qui fixent leur durée)`);
+  });
+  // Anything covering the slide holds the countdown: blank screen, overview, retouch panel, help.
+  // They open and close in several places, so their visibility is watched rather than each call site.
+  const syncAutoplayPause = () =>
+    autoplay.setPaused(blank !== 'none' || overview !== null || retouch.isOpen() || overlays.isHelpOpen());
+  const pauseWatch = new MutationObserver(syncAutoplayPause);
+  pauseWatch.observe(dom.element, { attributes: true, attributeFilter: ['hidden', 'class'], subtree: true });
+
   stage.display(deck, position, deck.slides[position.slide].transition, 'forward');
   renderHud(dom, deck, position);
   const found = validateDeck(source);
@@ -319,11 +382,15 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     toast.show(`Repris à la slide ${position.slide + 1} · Début pour revenir au début`);
   }
   if (options.file.handle) follow(options.file.handle);
+  renderAutoplayControls();
+  applyKiosk(undefined);
 
   return {
     destroy() {
       stopWatching?.();
       stopWatching = null;
+      autoplay.destroy();
+      pauseWatch.disconnect();
       laser.destroy();
       remoteDot.destroy();
       swipe.destroy();

@@ -13,6 +13,7 @@ export type PlayerAction =
   | 'white'
   | 'laser'
   | 'help'
+  | 'autoplay'
   | 'exit';
 
 /** PowerPoint's slide show keys, which presentation remotes also send (PageDown, B, F5…). */
@@ -46,6 +47,8 @@ export const KEY_ACTIONS: Readonly<Record<string, PlayerAction>> = {
   l: 'laser',
   L: 'laser',
   '?': 'help',
+  a: 'autoplay',
+  A: 'autoplay',
   Escape: 'exit',
 };
 
@@ -90,6 +93,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'black', keys: ['b', '.'], label: 'Écran noir' },
   { action: 'white', keys: ['w', ','], label: 'Écran blanc' },
   { action: 'laser', keys: ['l'], label: 'Pointeur laser (ou maintenir Ctrl)' },
+  { action: 'autoplay', keys: ['a'], label: 'Défilement automatique (en boucle)' },
   { action: 'retouch', keys: ['e'], label: 'Retoucher la slide avec Claude' },
   { action: 'help', keys: ['?'], label: 'Cette aide' },
   { action: 'exit', keys: ['Escape'], label: 'Quitter' },

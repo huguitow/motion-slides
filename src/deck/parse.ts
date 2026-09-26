@@ -1,4 +1,4 @@
-import { MAX_STEPS, TRANSITIONS, type Deck, type Slide, type Transition } from './types';
+import { isDuration, MAX_STEPS, TRANSITIONS, type Deck, type Slide, type Transition } from './types';
 
 const DEFAULT_TITLE = 'Sans titre';
 
@@ -24,7 +24,13 @@ export function parseDeck(source: string): Deck {
     title: readTitle(doc),
     sharedHead: doc.querySelector<HTMLTemplateElement>('template[data-deck-head]')?.innerHTML ?? '',
     slides: templates.map(readSlide),
+    autoplay: readAutoplay(doc),
   };
+}
+
+function readAutoplay(doc: Document): 'loop' | undefined {
+  const value = doc.querySelector('meta[name="deck-autoplay"]')?.getAttribute('content')?.trim();
+  return value === 'loop' ? 'loop' : undefined;
 }
 
 function readTitle(doc: Document): string {
@@ -46,7 +52,14 @@ function readSlide(template: HTMLTemplateElement): Slide {
     steps: readSteps(template.dataset.steps),
     transition: readTransition(template.dataset.transition),
     notes,
+    duration: readDuration(template.dataset.duration),
   };
+}
+
+/** An invalid value falls back to the player's pace; the deck checker points it out. */
+function readDuration(raw: string | undefined): number | undefined {
+  const value = raw === undefined || raw.trim() === '' ? Number.NaN : Number(raw);
+  return isDuration(value) ? value : undefined;
 }
 
 function readSteps(raw: string | undefined): number {

@@ -16,6 +16,8 @@ export interface PresenterLinkOptions {
   readonly deck: () => Deck;
   readonly position: () => Position;
   readonly blank: () => Blank;
+  /** Auto-advance pace in seconds, or null when it is off. */
+  readonly autoplay: () => number | null;
   readonly onAction: (action: RemoteAction) => void;
   /** Laser dot position sent by the presenter window, null to hide it. */
   readonly onLaser: (point: StagePoint | null) => void;
@@ -29,6 +31,8 @@ export interface PresenterLink {
   republish(): void;
   /** Tells the presenter window the screen was blanked or restored. */
   publishBlank(): void;
+  /** Tells the presenter window auto-advance started, stopped or changed pace. */
+  publishAutoplay(): void;
   destroy(): void;
 }
 
@@ -40,6 +44,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
   const send = (message: PresenterMessage) => channel?.postMessage(message);
   const sendState = () => send({ type: 'state', deck: options.deck(), position: options.position() });
   const sendBlank = () => send({ type: 'blank', blank: options.blank() });
+  const sendAutoplay = () => send({ type: 'autoplay', seconds: options.autoplay() });
 
   const connect = () => {
     if (channel) return;
@@ -49,6 +54,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
       if (message?.type === 'hello') {
         sendState();
         sendBlank();
+        sendAutoplay();
       } else if (message?.type === 'action') {
         options.onAction(message.action);
       } else if (message?.type === 'laser') {
@@ -70,6 +76,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
     },
     republish: sendState,
     publishBlank: sendBlank,
+    publishAutoplay: sendAutoplay,
     destroy() {
       send({ type: 'end' });
       channel?.close();

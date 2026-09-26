@@ -59,6 +59,7 @@ The prompt pushes Claude towards real visual storytelling: an identity derived f
 |---|---|
 | **PowerPoint-style navigation** | <kbd>Space</kbd>, <kbd>→</kbd> or click to advance; <kbd>←</kbd> or right-click to go back. On-click *builds* inside a slide, and going back lands on the previous slide's last build, just like PowerPoint. |
 | **Presenter tools** | <kbd>B</kbd> / <kbd>.</kbd> blacks the screen out and <kbd>W</kbd> / <kbd>,</kbd> whites it out, like PowerPoint; any key brings the slide back. <kbd>L</kbd> (or holding <kbd>Ctrl</kbd>) turns the cursor into a laser pointer, and pointing in the presenter view shows it on the projector too. <kbd>?</kbd> lists every shortcut. |
+| **Auto-advance and kiosk** | <kbd>A</kbd> (or ▶) plays every build on its own at 5, 8, 15 or 30 s each, looping at the end; a slide can ask for more time with `data-duration="12"`. A deck with `<meta name="deck-autoplay" content="loop">`, or exported while auto-advancing, starts by itself: ready for a booth or a lobby screen. |
 | **Touch and remotes** | Swipe left or right on a phone or tablet. Presentation remotes work out of the box: they send the same keys (Page ↓/↑, <kbd>B</kbd>, <kbd>F5</kbd>). |
 | **Overview** | <kbd>O</kbd> opens a grid of live thumbnails; arrows + <kbd>Enter</kbd> to jump. Or type a slide number and press <kbd>Enter</kbd>. |
 | **Presenter view** | <kbd>P</kbd> opens a second window with the current slide, the next build, your speaker notes, a timer and the clock. It remote-controls the audience window. |
@@ -113,6 +114,8 @@ One file, one `<template>` per slide. Everything else is plain HTML, CSS and Jav
 |---|---|
 | `data-steps="N"` | Number of on-click builds before moving on |
 | `data-transition` | `fade` (default), `slide` or `none` |
+| `data-duration="12"` | Seconds each build of the slide stays on screen when auto-advancing |
+| `<meta name="deck-autoplay" content="loop">` | Kiosk deck: starts auto-advancing on its own and loops |
 | `html[data-step="N"]` | Current build, for CSS-only animations |
 | `.deck-entered` on `<html>` | Added when the slide becomes visible: start entrance animations |
 | `deck.onStep`, `deck.onEnter`, `deck.onLeave` | JavaScript hooks, with `deck.step`, `deck.steps`, `deck.slideIndex`, `deck.slideCount` |

@@ -23,6 +23,9 @@ describe('parsePresenterMessage', () => {
       { type: 'laser', point: null },
       { type: 'blank', blank: 'black' },
       { type: 'blank', blank: 'none' },
+      { type: 'autoplay', seconds: 8 },
+      { type: 'autoplay', seconds: null },
+      { type: 'state', deck: { ...deck, autoplay: 'loop', slides: [{ ...deck.slides[0], duration: 12 }] }, position: { slide: 0, step: 0 } },
     ];
     for (const message of messages) {
       expect(parsePresenterMessage(message)).toEqual(message);
@@ -46,6 +49,14 @@ describe('parsePresenterMessage', () => {
     expect(parsePresenterMessage({ type: 'laser', point: { x: '0.5', y: 0.5 } })).toBeNull();
     expect(parsePresenterMessage({ type: 'laser', point: { x: Number.NaN, y: 0.5 } })).toBeNull();
     expect(parsePresenterMessage({ type: 'laser' })).toBeNull();
+  });
+
+  test('rejects malformed auto-advance durations', () => {
+    expect(parsePresenterMessage({ type: 'autoplay', seconds: -1 })).toBeNull();
+    expect(parsePresenterMessage({ type: 'autoplay', seconds: '8' })).toBeNull();
+    expect(parsePresenterMessage({ type: 'autoplay' })).toBeNull();
+    const badDuration = { ...deck, slides: [{ ...deck.slides[0], duration: 'long' }] };
+    expect(parsePresenterMessage({ type: 'state', deck: badDuration, position: { slide: 0, step: 0 } })).toBeNull();
   });
 
   test('rejects unknown blank screens', () => {

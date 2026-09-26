@@ -1,4 +1,4 @@
-import { MAX_STEPS, TRANSITIONS } from './types';
+import { isDuration, MAX_DURATION_SECONDS, MAX_STEPS, TRANSITIONS } from './types';
 
 export interface DeckIssue {
   /** Zero-based slide index, or null for a deck-level issue. */
@@ -37,6 +37,13 @@ function slideIssues(template: HTMLTemplateElement): string[] {
   const html = template.innerHTML;
   const content = template.content;
   const issues = [...stepIssues(template.dataset.steps, html)];
+
+  const duration = template.dataset.duration;
+  if (duration !== undefined && !isDuration(duration.trim() === '' ? Number.NaN : Number(duration))) {
+    issues.push(
+      `data-duration="${duration}" invalide : un nombre de secondes entre 0 et ${MAX_DURATION_SECONDS} est attendu, le rythme du lecteur est utilisé.`,
+    );
+  }
 
   const transition = template.dataset.transition;
   if (transition !== undefined && !TRANSITIONS.some((t) => t === transition)) {

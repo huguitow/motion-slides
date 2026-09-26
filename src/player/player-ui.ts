@@ -15,6 +15,7 @@ export function createPlayerDom() {
     <div class="player-viewport"></div>
     <div class="player-shield" aria-hidden="true"></div>
     <div class="player-progress"><div class="player-progress-bar"></div></div>
+    <div class="player-autoplay" aria-hidden="true"><div class="player-autoplay-bar"></div></div>
     <p class="player-toast" role="status" hidden></p>
     <section class="player-issues" aria-label="Points à corriger" hidden>
       <header>
@@ -44,6 +45,10 @@ export function createPlayerDom() {
         <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">${ICONS.next}</button>
       </span>
       <span class="hud-group">
+        <button type="button" data-action="autoplay" class="player-autoplay-toggle" aria-pressed="false" aria-label="Défilement automatique" title="Défilement automatique en boucle (A)">${ICONS.play}</button>
+        <button type="button" class="player-autoplay-seconds" title="Durée de chaque étape (cliquer pour changer)"></button>
+      </span>
+      <span class="hud-group">
         <button type="button" data-action="retouch" aria-label="Retoucher cette slide" title="Retoucher cette slide avec Claude (E)">${ICONS.retouch}</button>
         <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">${ICONS.overview}</button>
         <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">${ICONS.presenter}</button>
@@ -69,6 +74,9 @@ export function createPlayerDom() {
     shield: find<HTMLDivElement>('.player-shield'),
     hud: find<HTMLDivElement>('.player-hud'),
     progress: find<HTMLDivElement>('.player-progress-bar'),
+    autoplayBar: find<HTMLDivElement>('.player-autoplay-bar'),
+    autoplayToggle: find<HTMLButtonElement>('.player-autoplay-toggle'),
+    autoplaySeconds: find<HTMLButtonElement>('.player-autoplay-seconds'),
     toast: find<HTMLParagraphElement>('.player-toast'),
     counter: find<HTMLSpanElement>('.player-counter'),
     steps: find<HTMLSpanElement>('.player-steps'),
