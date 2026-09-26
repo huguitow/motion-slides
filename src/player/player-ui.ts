@@ -8,7 +8,7 @@ const TOAST_MS = 4000;
 
 export type PlayerDom = ReturnType<typeof createPlayerDom>;
 
-export function createPlayerDom(title: string) {
+export function createPlayerDom() {
   const element = document.createElement('div');
   element.className = 'player';
   element.innerHTML = `
@@ -23,8 +23,20 @@ export function createPlayerDom(title: string) {
       </header>
       <ul></ul>
     </section>
+    <section class="player-retouch" aria-label="Retoucher la slide" hidden>
+      <header>
+        <strong class="player-retouch-title"></strong>
+        <span>Ctrl+Entrée pour copier</span>
+      </header>
+      <textarea rows="3" aria-label="Ce que Claude doit changer" placeholder="Ex. : agrandis le graphique, ajoute une étape pour la conclusion…"></textarea>
+      <footer>
+        <p>Claude recevra ta consigne et le code de cette slide.</p>
+        <button type="button" data-panel="copy-retouch">${ICONS.copy}<span>Copier pour Claude</span></button>
+      </footer>
+    </section>
     <div class="player-hud" role="toolbar" aria-label="Contrôles de la présentation">
       <span class="player-title"></span>
+      <span class="player-live" title="Chaque modification du fichier s’affiche ici" hidden>En direct</span>
       <span class="player-steps"></span>
       <span class="hud-group">
         <button type="button" data-action="prev" aria-label="Précédent" title="Précédent (←)">${ICONS.prev}</button>
@@ -32,6 +44,7 @@ export function createPlayerDom(title: string) {
         <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">${ICONS.next}</button>
       </span>
       <span class="hud-group">
+        <button type="button" data-action="retouch" aria-label="Retoucher cette slide" title="Retoucher cette slide avec Claude (E)">${ICONS.retouch}</button>
         <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">${ICONS.overview}</button>
         <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">${ICONS.presenter}</button>
         <button type="button" data-action="pdf" aria-label="Exporter en PDF" title="Exporter en PDF (Ctrl+P)">${ICONS.pdf}</button>
@@ -42,10 +55,15 @@ export function createPlayerDom(title: string) {
     </div>`;
 
   const find = <T extends Element>(selector: string) => element.querySelector<T>(selector)!;
-  find<HTMLSpanElement>('.player-title').textContent = title;
 
   return {
     element,
+    title: find<HTMLSpanElement>('.player-title'),
+    live: find<HTMLSpanElement>('.player-live'),
+    retouchPanel: find<HTMLElement>('.player-retouch'),
+    retouchTitle: find<HTMLElement>('.player-retouch-title'),
+    retouchInput: find<HTMLTextAreaElement>('.player-retouch textarea'),
+    copyRetouch: find<HTMLButtonElement>('[data-panel="copy-retouch"]'),
     viewport: find<HTMLDivElement>('.player-viewport'),
     shield: find<HTMLDivElement>('.player-shield'),
     hud: find<HTMLDivElement>('.player-hud'),
@@ -61,21 +79,19 @@ export function createPlayerDom(title: string) {
   };
 }
 
-/** Lists validation issues behind a ⚠ button, with a ready-to-paste request for Claude. */
-export function bindIssues(dom: PlayerDom, issues: readonly DeckIssue[], toast: Toast): void {
-  if (issues.length === 0) return;
-  const label = (issue: DeckIssue) => (issue.slide === null ? issue.message : `Slide ${issue.slide + 1} : ${issue.message}`);
-  const count = `${issues.length} point${issues.length > 1 ? 's' : ''} à corriger`;
+export interface IssuesPanel {
+  /** Replaces the listed issues; the ⚠ button hides when there are none. */
+  update(issues: readonly DeckIssue[]): void;
+}
 
-  dom.issuesButton.hidden = false;
-  dom.issuesButton.innerHTML = `${ICONS.warning}<span>${issues.length}</span>`;
-  dom.issuesButton.title = count;
-  dom.issuesButton.setAttribute('aria-label', count);
-  for (const issue of issues) {
-    const item = document.createElement('li');
-    item.textContent = label(issue);
-    dom.issuesList.append(item);
-  }
+export function issuesCount(count: number): string {
+  return `${count} point${count > 1 ? 's' : ''} à corriger`;
+}
+
+/** Lists validation issues behind a ⚠ button, with a ready-to-paste request for Claude. */
+export function createIssuesPanel(dom: PlayerDom, toast: Toast): IssuesPanel {
+  let issues: readonly DeckIssue[] = [];
+  const label = (issue: DeckIssue) => (issue.slide === null ? issue.message : `Slide ${issue.slide + 1} : ${issue.message}`);
 
   dom.issuesButton.addEventListener('click', () => (dom.issuesPanel.hidden = !dom.issuesPanel.hidden));
   dom.copyIssues.addEventListener('click', async () => {
@@ -87,7 +103,25 @@ export function bindIssues(dom: PlayerDom, issues: readonly DeckIssue[], toast: 
       toast.show('Copie impossible : sélectionne la liste à la main.');
     }
   });
-  toast.show(`${count} dans ce fichier : clique sur ⚠ pour les voir.`);
+
+  return {
+    update(next) {
+      issues = next;
+      const count = issuesCount(next.length);
+      dom.issuesButton.hidden = next.length === 0;
+      if (next.length === 0) dom.issuesPanel.hidden = true;
+      dom.issuesButton.innerHTML = `${ICONS.warning}<span>${next.length}</span>`;
+      dom.issuesButton.title = count;
+      dom.issuesButton.setAttribute('aria-label', count);
+      dom.issuesList.replaceChildren(
+        ...next.map((issue) => {
+          const item = document.createElement('li');
+          item.textContent = label(issue);
+          return item;
+        }),
+      );
+    },
+  };
 }
 
 /** Slide counter, build counter and a progress bar that counts every build. */
@@ -95,6 +129,7 @@ export function renderHud(dom: PlayerDom, deck: Deck, position: Position): void 
   const steps = deck.slides.map((slide) => slide.steps);
   const slide = deck.slides[position.slide];
   const pad = (value: number) => String(value).padStart(2, '0');
+  dom.title.textContent = deck.title;
   dom.counter.textContent = `${pad(position.slide + 1)} / ${pad(deck.slides.length)}`;
   dom.steps.textContent = slide.steps > 0 ? `étape ${position.step} / ${slide.steps}` : '';
   const total = steps.reduce((sum, n) => sum + n + 1, 0);

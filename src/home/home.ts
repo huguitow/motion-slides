@@ -1,7 +1,9 @@
 import claudePrompt from '../../prompt/PROMPT_CLAUDE.md?raw';
 import { parseDeck } from '../deck/parse';
 import { ICONS } from '../ui/icons';
+import { canPickFileHandles, droppedFileHandle, pickFileHandle } from './open-file';
 import { mountPreview, type PreviewHandle } from './preview';
+import { buildPrompt } from './prompt';
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const COPIED_LABEL_MS = 2200;
@@ -13,8 +15,11 @@ const EXAMPLES = [
 ] as const;
 
 export interface HomeOptions {
-  /** Called with the raw text of a deck the user picked, dropped or chose among the examples. */
-  readonly onDeckSource: (source: string, fileName: string) => void;
+  /**
+   * Called with the raw text of a deck the user picked, dropped or chose among the examples.
+   * `handle` is given when the browser lets the player follow later edits of the file.
+   */
+  readonly onDeckSource: (source: string, fileName: string, handle?: FileSystemFileHandle) => void;
   /** Base URL of the bundled example decks. */
   readonly examplesUrl: string;
 }
@@ -51,20 +56,31 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
 
 /** File picker plus a whole-window drop target with a full-screen overlay. */
 function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: string) => void): () => void {
-  const readFile = async (file: File | undefined) => {
+  const readFile = async (file: File | undefined, handle?: FileSystemFileHandle | null) => {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
       return showError(`Fichier trop lourd (${Math.round(file.size / 1024 / 1024)} Mo, maximum 20 Mo).`);
     }
     try {
-      options.onDeckSource(await file.text(), file.name);
+      options.onDeckSource(await file.text(), file.name, handle ?? undefined);
     } catch (error) {
       console.error(error);
       showError(`Impossible de lire « ${file.name} ».`);
     }
   };
 
-  dom.open.addEventListener('click', () => dom.input.click());
+  // The system picker returns a handle the player can watch; the <input> is the fallback elsewhere.
+  const pickFile = async () => {
+    try {
+      const handle = await pickFileHandle();
+      if (handle) await readFile(await handle.getFile(), handle);
+    } catch (error) {
+      console.error(error);
+      showError('Impossible d’ouvrir ce fichier.');
+    }
+  };
+
+  dom.open.addEventListener('click', () => (canPickFileHandles() ? void pickFile() : dom.input.click()));
   dom.input.addEventListener('change', () => {
     void readFile(dom.input.files?.[0]);
     dom.input.value = '';
@@ -86,7 +102,9 @@ function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: stri
     event.preventDefault();
     depth = 0;
     setDragging(false);
-    void readFile(event.dataTransfer?.files[0]);
+    const file = event.dataTransfer?.files[0];
+    const handle = droppedFileHandle(event);
+    void handle.then((resolved) => readFile(file, resolved));
   };
   window.addEventListener('dragenter', onDragEnter);
   window.addEventListener('dragover', onDragOver);
@@ -100,14 +118,33 @@ function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: stri
   };
 }
 
+/** Copies the prompt followed by the typed topic; the "Lire le prompt" panel always shows that exact text. */
 function bindCopy(dom: HomeDom): () => void {
   let timer = 0;
   const label = dom.copy.innerHTML;
+  const fullPrompt = () => buildPrompt(claudePrompt, dom.topic.value);
+
+  const refreshScript = () => {
+    const text = fullPrompt();
+    dom.scriptText.textContent = text;
+    dom.scriptMeta.textContent = `${text.split('\n').length} lignes · Markdown`;
+  };
+  const fitTopic = () => {
+    dom.topic.style.height = 'auto';
+    // scrollHeight excludes the borders, which box-sizing: border-box counts in the height.
+    const borders = dom.topic.offsetHeight - dom.topic.clientHeight;
+    dom.topic.style.height = `${dom.topic.scrollHeight + borders}px`;
+  };
+
   const copy = async (button: HTMLButtonElement) => {
+    const hasTopic = dom.topic.value.trim() !== '';
     try {
-      await navigator.clipboard.writeText(claudePrompt);
+      await navigator.clipboard.writeText(fullPrompt());
       button.classList.add('is-done');
-      if (button === dom.copy) button.innerHTML = `${ICONS.check}<span>Prompt copié, colle-le dans Claude</span>`;
+      if (button === dom.copy) {
+        const done = hasTopic ? 'Copié avec ton sujet' : 'Copié, sans sujet';
+        button.innerHTML = `${ICONS.check}<span>${done}</span>`;
+      }
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         button.classList.remove('is-done');
@@ -121,6 +158,17 @@ function bindCopy(dom: HomeDom): () => void {
   };
   dom.copy.addEventListener('click', () => void copy(dom.copy));
   dom.scriptCopy.addEventListener('click', () => void copy(dom.scriptCopy));
+  dom.topic.addEventListener('input', () => {
+    fitTopic();
+    refreshScript();
+  });
+  // Enter copies; Shift+Enter adds a line for details (audience, duration…).
+  dom.topic.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    void copy(dom.copy);
+  });
+  refreshScript();
   return () => window.clearTimeout(timer);
 }
 
@@ -190,8 +238,13 @@ function createHomeDom() {
         <p class="eyebrow"><span class="tally" aria-hidden="true"></span>Lecteur de présentations</p>
         <h1>Des slides<br>qui <em>bougent</em>.</h1>
         <p class="lead">Claude écrit ta présentation en motion design, dans un seul fichier. Motion Slides la projette comme PowerPoint&nbsp;: une touche, et ça avance.</p>
+        <label class="topic">
+          <span class="topic-label">Sujet de ta présentation</span>
+          <textarea rows="1" placeholder="La tour Eiffel, pour une classe de 3e, 10 minutes" data-topic></textarea>
+          <span class="topic-hint"><kbd>Entrée</kbd> pour copier · <kbd>Maj</kbd>+<kbd>Entrée</kbd> pour aller à la ligne</span>
+        </label>
         <div class="actions">
-          <button type="button" class="button button-primary" data-action="copy">${ICONS.copy}<span>Copier le prompt pour Claude</span></button>
+          <button type="button" class="button button-primary" data-action="copy">${ICONS.copy}<span>Copier le prompt</span></button>
           <button type="button" class="button" data-action="open">${ICONS.open}<span>Ouvrir un fichier</span></button>
         </div>
         <p class="hint">ou glisse ton <code>.deck.html</code> n'importe où sur la page</p>
@@ -218,14 +271,14 @@ function createHomeDom() {
 
     <section class="cues" aria-label="Comment ça marche">
       <ol>
-        <li><span class="cue-number">01</span><h2>Copie le prompt</h2><p>Il contient tout le format et la direction artistique. Colle-le dans Claude (claude.ai, l'app, Claude Code) avec ton sujet.</p></li>
+        <li><span class="cue-number">01</span><h2>Copie le prompt</h2><p>Tape ton sujet, copie : tu obtiens tout le format et la direction artistique, avec ton sujet à la fin. Colle-le dans Claude (claude.ai, l'app, Claude Code).</p></li>
         <li><span class="cue-number">02</span><h2>Récupère le fichier</h2><p>Claude renvoie un seul fichier <code>.deck.html</code> : chaque slide est une petite page web animée.</p></li>
         <li><span class="cue-number">03</span><h2>Projette</h2><p><kbd>F</kbd> pour le plein écran, <kbd>Espace</kbd> pour avancer, <kbd>P</kbd> pour la vue présentateur.</p></li>
       </ol>
     </section>
 
     <details class="script">
-      <summary><span>Lire le prompt</span><span class="script-meta">${claudePrompt.split('\n').length} lignes · Markdown</span></summary>
+      <summary><span>Lire le prompt</span><span class="script-meta"></span></summary>
       <div class="script-body">
         <button type="button" class="button script-copy">${ICONS.copy}<span>Copier</span></button>
         <pre></pre>
@@ -241,10 +294,12 @@ function createHomeDom() {
     <input type="file" accept=".html,.htm,text/html" hidden>`;
 
   const find = <T extends Element>(selector: string) => element.querySelector<T>(selector)!;
-  find<HTMLPreElement>('.script pre').textContent = claudePrompt;
 
   return {
     element,
+    topic: find<HTMLTextAreaElement>('[data-topic]'),
+    scriptText: find<HTMLPreElement>('.script pre'),
+    scriptMeta: find<HTMLElement>('.script-meta'),
     copy: find<HTMLButtonElement>('[data-action="copy"]'),
     open: find<HTMLButtonElement>('[data-action="open"]'),
     present: find<HTMLButtonElement>('[data-action="present"]'),

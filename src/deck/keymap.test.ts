@@ -10,6 +10,10 @@ describe('actionForKey', () => {
     expect(actionForKey(key)).toBe('prev');
   });
 
+  test.each(['e', 'E'])('%j opens the slide retouch panel', (key) => {
+    expect(actionForKey(key)).toBe('retouch');
+  });
+
   test('maps jumps, fullscreen and exit', () => {
     expect(actionForKey('Home')).toBe('first');
     expect(actionForKey('End')).toBe('last');

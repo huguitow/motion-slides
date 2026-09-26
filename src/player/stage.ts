@@ -44,6 +44,11 @@ export class Stage {
     this.show(buildSlideDocument(deck, position.slide, position.step), position.slide, transition, direction);
   }
 
+  /** Forgets which slide is on stage, so the next display() reloads it: used when the deck changed. */
+  invalidate(): void {
+    this.shownSlide = -1;
+  }
+
   private show(documentHtml: string, slideIndex: number, transition: Transition, direction: Direction): void {
     this.pending?.remove();
 
