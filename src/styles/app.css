@@ -78,6 +78,51 @@ body {
   touch-action: none;
 }
 
+/* ---------- Auto-advance ---------- */
+
+.player-autoplay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.player-autoplay.is-running {
+  opacity: 1;
+}
+
+.player-autoplay-bar {
+  height: 100%;
+  background: var(--tally);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.player.is-idle .player-autoplay.is-running {
+  opacity: 0.45;
+}
+
+.player-hud .player-autoplay-toggle[aria-pressed='true'] {
+  color: var(--tally-strong);
+}
+
+.player-hud .player-autoplay-seconds {
+  width: auto;
+  padding: 0 var(--space-2);
+  color: var(--paper-dim);
+  font: 500 12px var(--font-mono);
+}
+
+/* A kiosk deck plays on its own: nothing is shown until someone moves the mouse. */
+.player.is-kiosk.is-idle .player-autoplay {
+  opacity: 0;
+}
+
 /* ---------- Laser pointer ---------- */
 
 .laser-dot {

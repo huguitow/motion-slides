@@ -22,6 +22,12 @@ describe('validateDeck', () => {
     expect(messages(slide(''))).toEqual([expect.stringMatching(/titre/i)]);
   });
 
+  test('flags an invalid data-duration', () => {
+    expect(messages(TITLE + slide('data-duration="vite"'))).toEqual([expect.stringMatching(/data-duration/)]);
+    expect(messages(TITLE + slide('data-duration="0"'))).toEqual([expect.stringMatching(/data-duration/)]);
+    expect(messages(TITLE + slide('data-duration="20"'))).toEqual([]);
+  });
+
   test('flags invalid data-steps values with the slide they belong to', () => {
     const issues = validateDeck(TITLE + slide('') + slide('data-steps="abc"') + slide('data-steps="500"'));
 

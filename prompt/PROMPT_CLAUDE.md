@@ -46,6 +46,9 @@ Tu vas créer une présentation en motion design au format **Motion Slides** : u
 |---|---|---|
 | `data-steps` | entier ≥ 0 (défaut `0`) | Nombre d'**animations au clic** dans la slide avant de passer à la suivante, comme les animations de PowerPoint. |
 | `data-transition` | `fade` (défaut), `slide`, `none` | Transition quand on **arrive** sur cette slide. Mets `none` si la slide fait sa propre entrée animée. |
+| `data-duration` | nombre de secondes, optionnel | En **défilement automatique** (touche A du lecteur), temps pendant lequel chaque étape de cette slide reste à l'écran. Sans l'attribut, le lecteur applique son propre rythme (8 s par défaut). À mettre seulement sur les slides qui demandent plus (ou moins) de temps de lecture. |
+
+**Présentation qui tourne toute seule** (salon, écran d'accueil, vitrine) : seulement si l'utilisateur le demande, ajoute `<meta name="deck-autoplay" content="loop">` dans le `<head>`. Le lecteur démarre alors le défilement automatique dès l'ouverture et boucle à la fin. Donne dans ce cas un `data-duration` adapté à chaque slide dense, et évite les notes indispensables à la compréhension : personne ne présente.
 
 ## Animations au clic (étapes)
 

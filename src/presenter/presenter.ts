@@ -69,6 +69,9 @@ export function mountPresenter(host: HTMLElement, channelId: string): void {
     } else if (message?.type === 'blank') {
       dom.blank.hidden = message.blank === 'none';
       dom.blank.textContent = message.blank === 'white' ? 'Écran blanc' : 'Écran noir';
+    } else if (message?.type === 'autoplay') {
+      dom.autoplay.hidden = message.seconds === null;
+      dom.autoplay.textContent = `Défilement auto · ${message.seconds} s`;
     } else if (message?.type === 'end') {
       dom.element.classList.add('is-ended');
     }
@@ -155,6 +158,7 @@ function createPresenterDom() {
       <span class="presenter-counter"></span>
       <span class="presenter-steps"></span>
       <span class="presenter-blank" hidden></span>
+      <span class="presenter-autoplay" hidden></span>
       <span class="presenter-spacer"></span>
       <span class="presenter-elapsed" aria-label="Temps écoulé"></span>
       <div class="presenter-toolbar">
@@ -195,6 +199,7 @@ function createPresenterDom() {
     prev: find<HTMLButtonElement>('[data-action="prev"]'),
     nextButton: find<HTMLButtonElement>('[data-action="next"]'),
     blank: find<HTMLElement>('.presenter-blank'),
+    autoplay: find<HTMLElement>('.presenter-autoplay'),
     currentSection: find<HTMLElement>('.presenter-current'),
     current: find<HTMLElement>('[data-role="current"]'),
     currentShield: find<HTMLElement>('.presenter-shield'),

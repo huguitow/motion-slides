@@ -101,6 +101,20 @@
   display: none;
 }
 
+.presenter-autoplay {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--tally-soft);
+  color: var(--tally-strong);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.presenter-autoplay[hidden] {
+  display: none;
+}
+
 .presenter-side {
   display: flex;
   flex-direction: column;

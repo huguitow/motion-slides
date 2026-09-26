@@ -42,6 +42,21 @@ describe('parseDeck', () => {
     expect(deck.slides.map((s) => s.transition)).toEqual(['slide', 'none', 'fade', 'fade']);
   });
 
+  test('reads data-duration in seconds, ignoring invalid values', () => {
+    const deck = parseDeck(
+      slide('data-duration="12"', 'a') + slide('data-duration="2.5"', 'b') + slide('data-duration="0"', 'c') +
+        slide('data-duration="abc"', 'd') + slide('data-duration="99999"', 'e') + slide('', 'f'),
+    );
+
+    expect(deck.slides.map((s) => s.duration)).toEqual([12, 2.5, undefined, undefined, undefined, undefined]);
+  });
+
+  test('reads the deck-autoplay meta: only "loop" turns kiosk mode on', () => {
+    expect(parseDeck(`<meta name="deck-autoplay" content="loop">${slide('', 'x')}`).autoplay).toBe('loop');
+    expect(parseDeck(`<meta name="deck-autoplay" content="yes">${slide('', 'x')}`).autoplay).toBeUndefined();
+    expect(parseDeck(slide('', 'x')).autoplay).toBeUndefined();
+  });
+
   test('moves speaker notes out of the slide markup', () => {
     const deck = parseDeck(slide('', '<h1>Hi</h1><aside data-notes>Say hello</aside>'));
 

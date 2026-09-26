@@ -37,12 +37,16 @@ describe('actionForKey', () => {
     expect(actionForKey('?')).toBe('help');
   });
 
+  test.each(['a', 'A'])('%j toggles auto-advance', (key) => {
+    expect(actionForKey(key)).toBe('autoplay');
+  });
+
   test('maps F5, sent by presentation remotes, to fullscreen', () => {
     expect(actionForKey('F5')).toBe('fullscreen');
   });
 
   test('ignores unrelated keys', () => {
-    expect(actionForKey('a')).toBeNull();
+    expect(actionForKey('z')).toBeNull();
     expect(actionForKey('Shift')).toBeNull();
   });
 });
