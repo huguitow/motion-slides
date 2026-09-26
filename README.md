@@ -17,7 +17,12 @@ Un lecteur de présentations en motion design. Claude écrit les slides en HTML/
 | O | Vue d'ensemble (flèches + Entrée pour choisir) |
 | P | Vue présentateur (autre fenêtre) |
 | F | Plein écran |
+| Ctrl+P ou ⎙ | Exporter en PDF (une page par slide, à sa dernière étape) |
 | Échap | Quitter (hors plein écran) |
+
+**Vérification** : au chargement, Motion Deck repère les erreurs fréquentes d'un deck généré (titre manquant, `data-steps` invalide ou jamais utilisé, étape ciblée inexistante, transition inconnue, éléments cliquables, médias externes). La présentation reste jouable ; un bouton ⚠ liste les points et « Copier pour Claude » prépare la demande de correction à coller dans Claude.
+
+**Export PDF** : choisis « Enregistrer au format PDF » dans la fenêtre d'impression. Chaque page fait 1920×1080 ; les animations d'entrée ont 2,5 s pour se terminer avant la capture. Les effets de flou (`filter: blur`) peuvent être rendus avec des bords nets à l'impression.
 
 **Vue présentateur** : une seconde fenêtre affiche la slide en cours, la prochaine étape, les notes (`<aside data-notes>`), un chronomètre et l'heure. Elle pilote la présentation : mets la fenêtre principale en plein écran sur le projecteur et garde la vue présentateur sur ton écran. Les deux fenêtres communiquent localement via `BroadcastChannel` (même navigateur, même origine) ; autorise les pop-ups si le navigateur bloque l'ouverture.
 

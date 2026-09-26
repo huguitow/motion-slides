@@ -1,4 +1,13 @@
-export type PlayerAction = 'next' | 'prev' | 'first' | 'last' | 'fullscreen' | 'overview' | 'presenter' | 'exit';
+export type PlayerAction =
+  | 'next'
+  | 'prev'
+  | 'first'
+  | 'last'
+  | 'fullscreen'
+  | 'overview'
+  | 'presenter'
+  | 'pdf'
+  | 'exit';
 
 const KEY_ACTIONS: Readonly<Record<string, PlayerAction>> = {
   ' ': 'next',

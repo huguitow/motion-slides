@@ -10,6 +10,8 @@ const BASE_STYLE = `
     background: #000;
     color: #fff;
     font-family: system-ui, sans-serif;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 `;
 

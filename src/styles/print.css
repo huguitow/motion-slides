@@ -1,0 +1,78 @@
+/*
+ * On screen, pages are laid out at full size, 10 per row, shrunk to 2 % under an opaque overlay:
+ * even a 100-slide deck stays inside the viewport so its iframes keep animating.
+ */
+.print-deck {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  width: calc(1920px * 10);
+  transform: scale(0.02);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.print-page {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: #000;
+}
+
+.print-page iframe {
+  display: block;
+  width: 1920px;
+  height: 1080px;
+  border: 0;
+}
+
+.print-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 20px;
+  text-align: center;
+}
+
+@media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+
+  html.is-printing-deck,
+  html.is-printing-deck body {
+    height: auto;
+    background: #000;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  html.is-printing-deck body > :not(.print-deck) {
+    display: none !important;
+  }
+
+  html.is-printing-deck .print-deck {
+    position: static;
+    display: block;
+    width: 1920px;
+    transform: none;
+  }
+
+  html.is-printing-deck .print-page {
+    break-after: page;
+  }
+
+  html.is-printing-deck .print-page:last-child {
+    break-after: auto;
+  }
+}

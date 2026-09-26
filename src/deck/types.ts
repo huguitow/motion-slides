@@ -1,4 +1,6 @@
 export const TRANSITIONS = ['fade', 'slide', 'none'] as const;
+/** Upper bound for `data-steps`. */
+export const MAX_STEPS = 99;
 export type Transition = (typeof TRANSITIONS)[number];
 
 export interface Slide {

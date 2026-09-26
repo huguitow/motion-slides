@@ -1,5 +1,6 @@
 import type { Position } from '../deck/navigation';
 import type { Deck } from '../deck/types';
+import type { DeckIssue } from '../deck/validate';
 
 const IDLE_HIDE_MS = 2500;
 const TOAST_MS = 4000;
@@ -14,6 +15,13 @@ export function createPlayerDom(title: string) {
     <div class="player-shield" aria-hidden="true"></div>
     <div class="player-progress"><div class="player-progress-bar"></div></div>
     <p class="player-toast" role="status" hidden></p>
+    <section class="player-issues" aria-label="Points à corriger" hidden>
+      <header>
+        <strong>Points à corriger dans ce fichier</strong>
+        <button type="button" data-panel="copy-issues">Copier pour Claude</button>
+      </header>
+      <ul></ul>
+    </section>
     <div class="player-hud" role="toolbar" aria-label="Contrôles de la présentation">
       <span class="player-title"></span>
       <span class="player-steps"></span>
@@ -22,7 +30,9 @@ export function createPlayerDom(title: string) {
       <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">→</button>
       <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">▦</button>
       <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">◧</button>
+      <button type="button" data-action="pdf" aria-label="Exporter en PDF" title="Exporter en PDF (Ctrl+P)">⎙</button>
       <button type="button" data-action="fullscreen" aria-label="Plein écran" title="Plein écran (F)">⛶</button>
+      <button type="button" data-panel="issues" class="player-issues-button" hidden></button>
       <button type="button" data-action="exit" aria-label="Fermer" title="Fermer (Échap)">✕</button>
     </div>`;
 
@@ -38,8 +48,41 @@ export function createPlayerDom(title: string) {
     toast: find<HTMLParagraphElement>('.player-toast'),
     counter: find<HTMLSpanElement>('.player-counter'),
     steps: find<HTMLSpanElement>('.player-steps'),
-    buttons: [...element.querySelectorAll<HTMLButtonElement>('.player-hud button')],
+    buttons: [...element.querySelectorAll<HTMLButtonElement>('.player-hud button[data-action]')],
+    issuesButton: find<HTMLButtonElement>('[data-panel="issues"]'),
+    issuesPanel: find<HTMLElement>('.player-issues'),
+    issuesList: find<HTMLUListElement>('.player-issues ul'),
+    copyIssues: find<HTMLButtonElement>('[data-panel="copy-issues"]'),
   };
+}
+
+/** Lists validation issues behind a ⚠ button, with a ready-to-paste request for Claude. */
+export function bindIssues(dom: PlayerDom, issues: readonly DeckIssue[], toast: Toast): void {
+  if (issues.length === 0) return;
+  const label = (issue: DeckIssue) => (issue.slide === null ? issue.message : `Slide ${issue.slide + 1} : ${issue.message}`);
+  const count = `${issues.length} point${issues.length > 1 ? 's' : ''} à corriger`;
+
+  dom.issuesButton.hidden = false;
+  dom.issuesButton.textContent = `⚠ ${issues.length}`;
+  dom.issuesButton.title = count;
+  dom.issuesButton.setAttribute('aria-label', count);
+  for (const issue of issues) {
+    const item = document.createElement('li');
+    item.textContent = label(issue);
+    dom.issuesList.append(item);
+  }
+
+  dom.issuesButton.addEventListener('click', () => (dom.issuesPanel.hidden = !dom.issuesPanel.hidden));
+  dom.copyIssues.addEventListener('click', async () => {
+    const request = `Corrige ces points dans le fichier .deck.html et renvoie le fichier complet :\n${issues.map((issue) => `- ${label(issue)}`).join('\n')}`;
+    try {
+      await navigator.clipboard.writeText(request);
+      toast.show('Copié : colle-le dans Claude avec ton fichier.');
+    } catch {
+      toast.show('Copie impossible : sélectionne la liste à la main.');
+    }
+  });
+  toast.show(`${count} dans ce fichier : clique sur ⚠ pour les voir.`);
 }
 
 /** Slide counter, build counter and a progress bar that counts every build. */

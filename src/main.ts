@@ -1,4 +1,5 @@
 import { DeckParseError, parseDeck } from './deck/parse';
+import { validateDeck } from './deck/validate';
 import { mountHome, type HomeHandle } from './home';
 import { mountPlayer, type PlayerHandle } from './player/player';
 import { mountPresenter } from './presenter/presenter';
@@ -24,7 +25,7 @@ function present(source: string, fileName: string): void {
     home?.destroy();
     home = null;
     document.title = `${deck.title} · ${APP_TITLE}`;
-    player = mountPlayer(app, deck, { onExit: () => showHome() });
+    player = mountPlayer(app, deck, { onExit: () => showHome(), issues: validateDeck(source) });
   } catch (error) {
     if (!(error instanceof DeckParseError)) console.error(error);
     const reason = error instanceof DeckParseError ? error.message : 'Fichier illisible.';

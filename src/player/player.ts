@@ -3,12 +3,16 @@ import { actionForKey, type PlayerAction } from '../deck/keymap';
 import { first, goTo, last, next, prev, type Position } from '../deck/navigation';
 import type { Deck } from '../deck/types';
 import { openOverview, type OverviewHandle } from './overview';
-import { createPlayerDom, createToast, renderHud, watchIdle } from './player-ui';
+import type { DeckIssue } from '../deck/validate';
+import { bindIssues, createPlayerDom, createToast, renderHud, watchIdle } from './player-ui';
 import { createPresenterLink } from './presenter-link';
+import { printDeck } from './print';
 import { Stage } from './stage';
 
 export interface PlayerOptions {
   readonly onExit: () => void;
+  /** Validation warnings shown behind a ⚠ button. */
+  readonly issues?: readonly DeckIssue[];
 }
 
 export interface PlayerHandle {
@@ -72,6 +76,8 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
       case 'presenter':
         if (!presenter.open()) toast.show('Fenêtre bloquée : autorise les pop-ups pour ce site.');
         return;
+      case 'pdf':
+        return exportPdf();
       case 'exit':
         if (!document.fullscreenElement) options.onExit();
         return;
@@ -87,7 +93,28 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
     return jump.handled;
   };
 
+  // Aborted by destroy(): leaving the player mid-export must not leave the overlay or open a print dialog.
+  let printing: AbortController | null = null;
+  const exportPdf = () => {
+    if (printing) return;
+    const controller = new AbortController();
+    printing = controller;
+    printDeck(deck, controller.signal)
+      .catch((error: unknown) => {
+        console.error(error);
+        toast.show('Export PDF impossible.');
+      })
+      .finally(() => {
+        if (printing === controller) printing = null;
+      });
+  };
+
   const onKeyDown = (event: KeyboardEvent) => {
+    // Ctrl+P prints the whole deck rather than a screenshot of the current slide.
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
+      event.preventDefault();
+      return exportPdf();
+    }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (overview) {
       if (overview.handleKey(event)) event.preventDefault();
@@ -124,10 +151,12 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
 
   stage.display(deck, position, deck.slides[0].transition, 'forward');
   renderHud(dom, deck, position);
+  bindIssues(dom, options.issues ?? [], toast);
 
   return {
     destroy() {
       document.removeEventListener('keydown', onKeyDown);
+      printing?.abort();
       stopIdleWatch();
       toast.destroy();
       if (document.fullscreenElement) void document.exitFullscreen();

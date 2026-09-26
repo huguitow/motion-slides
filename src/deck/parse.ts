@@ -1,6 +1,5 @@
-import { TRANSITIONS, type Deck, type Slide, type Transition } from './types';
+import { MAX_STEPS, TRANSITIONS, type Deck, type Slide, type Transition } from './types';
 
-const MAX_STEPS = 99;
 const DEFAULT_TITLE = 'Sans titre';
 
 export class DeckParseError extends Error {
