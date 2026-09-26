@@ -1,22 +1,28 @@
+import type { Blank } from './blank';
+import type { StagePoint } from './fit';
 import type { Position } from './navigation';
 import { TRANSITIONS, type Deck, type Slide } from './types';
 
-/** Navigation the presenter window may trigger on the audience window. */
-export type RemoteAction = 'next' | 'prev' | 'first' | 'last';
+/** What the presenter window may trigger on the audience window: navigation and blank screens. */
+export type RemoteAction = 'next' | 'prev' | 'first' | 'last' | 'black' | 'white';
 
 /**
  * Messages exchanged over a BroadcastChannel between the audience window and the presenter window.
- * - presenter → audience: `hello` (asks for the state), `action`
- * - audience → presenter: `state` (full deck), `position`, `end`
+ * - presenter → audience: `hello` (asks for the state), `action`, `laser` (null hides the dot)
+ * - audience → presenter: `state` (full deck), `position`, `blank`, `end`
  */
 export type PresenterMessage =
   | { readonly type: 'hello' }
   | { readonly type: 'end' }
   | { readonly type: 'position'; readonly position: Position }
   | { readonly type: 'state'; readonly deck: Deck; readonly position: Position }
-  | { readonly type: 'action'; readonly action: RemoteAction };
+  | { readonly type: 'action'; readonly action: RemoteAction }
+  | { readonly type: 'laser'; readonly point: StagePoint | null }
+  | { readonly type: 'blank'; readonly blank: Blank };
 
-const REMOTE_ACTIONS: readonly RemoteAction[] = ['next', 'prev', 'first', 'last'];
+const BLANKS: readonly Blank[] = ['none', 'black', 'white'];
+
+export const REMOTE_ACTIONS: readonly RemoteAction[] = ['next', 'prev', 'first', 'last', 'black', 'white'];
 
 export function presenterChannelName(id: string): string {
   return `motion-slides:${id}`;
@@ -39,6 +45,13 @@ export function parsePresenterMessage(data: unknown): PresenterMessage | null {
       return REMOTE_ACTIONS.find((action) => action === data.action)
         ? { type: 'action', action: data.action as RemoteAction }
         : null;
+    case 'laser':
+      if (data.point === null) return { type: 'laser', point: null };
+      return isStagePoint(data.point) ? { type: 'laser', point: { x: data.point.x, y: data.point.y } } : null;
+    case 'blank': {
+      const blank = BLANKS.find((value) => value === data.blank);
+      return blank ? { type: 'blank', blank } : null;
+    }
     default:
       return null;
   }
@@ -50,6 +63,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isIndex(value: unknown): value is number {
   return Number.isInteger(value) && (value as number) >= 0;
+}
+
+function isUnit(value: unknown): value is number {
+  return typeof value === 'number' && value >= 0 && value <= 1;
+}
+
+function isStagePoint(value: unknown): value is StagePoint {
+  return isRecord(value) && isUnit(value.x) && isUnit(value.y);
 }
 
 function isPosition(value: unknown): value is Position {

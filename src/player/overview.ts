@@ -65,7 +65,7 @@ export function openOverview(host: HTMLElement, deck: Deck, current: number, opt
 
   return {
     handleKey(event) {
-      if (event.key === 'f' || event.key === 'F' || event.key === 'Tab') return false;
+      if (event.key === 'f' || event.key === 'F' || event.key === 'F5' || event.key === 'Tab') return false;
       if (event.key === 'Escape' || event.key === 'o' || event.key === 'O') {
         options.onClose();
       } else if (event.key === 'Enter' || event.key === ' ') {

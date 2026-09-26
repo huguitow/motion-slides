@@ -1,20 +1,24 @@
-import { actionForKey } from '../deck/keymap';
+import { stagePoint, type StagePoint } from '../deck/fit';
+import { actionForKeyEvent, type PlayerAction } from '../deck/keymap';
 import { next, type Position } from '../deck/navigation';
 import {
   isInDeck,
   parsePresenterMessage,
   presenterChannelName,
+  REMOTE_ACTIONS,
   type PresenterMessage,
   type RemoteAction,
 } from '../deck/presenter-protocol';
 import type { Deck } from '../deck/types';
 import { Stage } from '../player/stage';
+import { createLaserPointer, type LaserPointer } from '../ui/laser';
 import { createTimer, type Timer } from './timer';
 import '../styles/presenter.css';
 
 const HELLO_RETRY_MS = 1000;
 const CLOCK_TICK_MS = 500;
-const REMOTE_ACTIONS: readonly string[] = ['next', 'prev', 'first', 'last'];
+const isRemoteAction = (action: PlayerAction): action is RemoteAction =>
+  REMOTE_ACTIONS.some((remote) => remote === action);
 
 type PresenterDom = ReturnType<typeof createPresenterDom>;
 
@@ -62,6 +66,9 @@ export function mountPresenter(host: HTMLElement, channelId: string): void {
     } else if (message?.type === 'position' && deck && isInDeck(message.position, deck)) {
       position = message.position;
       render(deck);
+    } else if (message?.type === 'blank') {
+      dom.blank.hidden = message.blank === 'none';
+      dom.blank.textContent = message.blank === 'white' ? 'Écran blanc' : 'Écran noir';
     } else if (message?.type === 'end') {
       dom.element.classList.add('is-ended');
     }
@@ -71,8 +78,29 @@ export function mountPresenter(host: HTMLElement, channelId: string): void {
   send({ type: 'hello' });
   const helloTimer = window.setInterval(() => send({ type: 'hello' }), HELLO_RETRY_MS);
 
-  bindControls(dom, (action) => send({ type: 'action', action }), timer);
+  const laser = bindLaser(dom, send);
+  bindControls(dom, (action) => send({ type: 'action', action }), timer, laser);
   startClock(dom, timer);
+}
+
+/** Pointing at the current slide here shows the laser dot on the projected slide too. */
+function bindLaser(dom: PresenterDom, send: (message: PresenterMessage) => void): LaserPointer {
+  let frame = 0;
+  let latest: StagePoint | null = null;
+  // At most one message per frame: pointermove can fire far more often than the screen refreshes.
+  const flush = () => {
+    frame = 0;
+    send({ type: 'laser', point: latest });
+  };
+  return createLaserPointer({
+    surface: dom.currentShield,
+    layer: dom.currentSection,
+    onPoint: (point) => {
+      const rect = dom.currentShield.getBoundingClientRect();
+      latest = point && stagePoint(point.clientX - rect.left, point.clientY - rect.top, rect.width, rect.height);
+      frame ||= window.requestAnimationFrame(flush);
+    },
+  });
 }
 
 function renderInfo(dom: PresenterDom, deck: Deck, position: Position): void {
@@ -84,14 +112,17 @@ function renderInfo(dom: PresenterDom, deck: Deck, position: Position): void {
   dom.notes.classList.toggle('is-empty', !slide.notes);
 }
 
-function bindControls(dom: PresenterDom, remote: (action: RemoteAction) => void, timer: Timer): void {
+function bindControls(dom: PresenterDom, remote: (action: RemoteAction) => void, timer: Timer, laser: LaserPointer): void {
   document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target instanceof HTMLButtonElement && (event.key === 'Enter' || event.key === ' ')) return;
-    const action = actionForKey(event.key);
-    if (action && REMOTE_ACTIONS.includes(action)) {
+    // Ctrl+arrows still navigate while Ctrl is held to point with the laser.
+    const action = actionForKeyEvent(event);
+    if (action === 'laser') {
       event.preventDefault();
-      remote(action as RemoteAction);
+      laser.toggle();
+    } else if (action && isRemoteAction(action)) {
+      event.preventDefault();
+      remote(action);
     }
   });
   dom.currentShield.addEventListener('click', () => remote('next'));
@@ -123,6 +154,7 @@ function createPresenterDom() {
       <strong class="presenter-title">Motion Slides</strong>
       <span class="presenter-counter"></span>
       <span class="presenter-steps"></span>
+      <span class="presenter-blank" hidden></span>
       <span class="presenter-spacer"></span>
       <span class="presenter-elapsed" aria-label="Temps écoulé"></span>
       <div class="presenter-toolbar">
@@ -162,6 +194,8 @@ function createPresenterDom() {
     reset: find<HTMLButtonElement>('[data-action="reset"]'),
     prev: find<HTMLButtonElement>('[data-action="prev"]'),
     nextButton: find<HTMLButtonElement>('[data-action="next"]'),
+    blank: find<HTMLElement>('.presenter-blank'),
+    currentSection: find<HTMLElement>('.presenter-current'),
     current: find<HTMLElement>('[data-role="current"]'),
     currentShield: find<HTMLElement>('.presenter-shield'),
     next: find<HTMLElement>('[data-role="next"]'),

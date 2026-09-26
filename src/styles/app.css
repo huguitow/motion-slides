@@ -68,8 +68,127 @@ body {
   cursor: default;
 }
 
-.player.is-idle .player-shield {
+.player.is-idle .player-shield,
+.player.is-lasering .player-shield {
   cursor: none;
+}
+
+/* Horizontal swipes belong to the player, not to the browser's own gestures. */
+.player-shield {
+  touch-action: none;
+}
+
+/* ---------- Laser pointer ---------- */
+
+.laser-dot {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  z-index: 6;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, var(--tally) 40%, color-mix(in srgb, var(--tally) 0%, transparent) 72%);
+  box-shadow: 0 0 14px 4px color-mix(in srgb, var(--tally) 55%, transparent);
+  pointer-events: none;
+}
+
+.laser-dot[hidden] {
+  display: none;
+}
+
+/* ---------- Black / white screen ---------- */
+
+.player-blank {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  animation: blank-in 0.2s ease-out;
+}
+
+.player-blank[data-blank='white'] {
+  background: #fff;
+}
+
+.player-blank[hidden] {
+  display: none;
+}
+
+@keyframes blank-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- Keyboard help ---------- */
+
+.player-help {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  width: min(560px, calc(100% - var(--space-6)));
+  max-height: calc(100% - var(--space-8));
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 1px solid rgb(239 232 218 / 0.14);
+  border-radius: var(--radius-3);
+  background: rgb(21 20 17 / 0.96);
+  backdrop-filter: blur(14px);
+  color: var(--paper);
+  transform: translate(-50%, -50%);
+}
+
+.player-help[hidden] {
+  display: none;
+}
+
+.player-help:focus {
+  outline: none;
+}
+
+.player-help h2 {
+  margin: 0;
+  font: 400 32px/1 var(--font-display);
+}
+
+.player-help > p {
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--paper-faint);
+  font: 12px var(--font-mono);
+}
+
+.player-help dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: 14px;
+}
+
+.player-help dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.player-help dd {
+  margin: 0;
+  align-self: center;
+  color: var(--paper-dim);
+}
+
+.player-help kbd {
+  min-width: 1.6em;
+  padding: 2px 6px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-1);
+  background: var(--ink-2);
+  color: var(--paper);
+  font: 500 12px var(--font-mono);
+  text-align: center;
 }
 
 .player-progress {

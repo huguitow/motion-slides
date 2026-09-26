@@ -83,6 +83,24 @@
   cursor: pointer;
 }
 
+.presenter-current.is-lasering .presenter-shield {
+  cursor: none;
+}
+
+.presenter-blank {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-0);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.presenter-blank[hidden] {
+  display: none;
+}
+
 .presenter-side {
   display: flex;
   flex-direction: column;

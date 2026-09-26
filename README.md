@@ -58,6 +58,8 @@ The prompt pushes Claude towards real visual storytelling: an identity derived f
 | | |
 |---|---|
 | **PowerPoint-style navigation** | <kbd>Space</kbd>, <kbd>→</kbd> or click to advance; <kbd>←</kbd> or right-click to go back. On-click *builds* inside a slide, and going back lands on the previous slide's last build, just like PowerPoint. |
+| **Presenter tools** | <kbd>B</kbd> / <kbd>.</kbd> blacks the screen out and <kbd>W</kbd> / <kbd>,</kbd> whites it out, like PowerPoint; any key brings the slide back. <kbd>L</kbd> (or holding <kbd>Ctrl</kbd>) turns the cursor into a laser pointer, and pointing in the presenter view shows it on the projector too. <kbd>?</kbd> lists every shortcut. |
+| **Touch and remotes** | Swipe left or right on a phone or tablet. Presentation remotes work out of the box: they send the same keys (Page ↓/↑, <kbd>B</kbd>, <kbd>F5</kbd>). |
 | **Overview** | <kbd>O</kbd> opens a grid of live thumbnails; arrows + <kbd>Enter</kbd> to jump. Or type a slide number and press <kbd>Enter</kbd>. |
 | **Presenter view** | <kbd>P</kbd> opens a second window with the current slide, the next build, your speaker notes, a timer and the clock. It remote-controls the audience window. |
 | **PDF export** | <kbd>Ctrl</kbd>+<kbd>P</kbd> exports one 16:9 page per slide, each at its final build. |
@@ -122,7 +124,7 @@ A `.deck.html` file is arbitrary JavaScript, so Motion Slides treats every slide
 - each slide runs in its own `<iframe sandbox="allow-scripts">` **without** `allow-same-origin`: it cannot read the player page, its storage or its cookies;
 - a transparent shield sits above the slides, so keyboard focus and clicks always stay with the player;
 - live reload only ever **reads** the one file you picked or dropped, and stops when you leave the player; nothing is written to disk;
-- the player and slides talk only through a tiny, validated `postMessage` protocol; the presenter window uses a validated `BroadcastChannel` protocol limited to navigation.
+- the player and slides talk only through a tiny, validated `postMessage` protocol; the presenter window uses a validated `BroadcastChannel` protocol limited to navigation, blank screens and laser coordinates.
 
 ## Development
 
