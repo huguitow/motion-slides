@@ -30,8 +30,8 @@ Motion Slides is the missing piece: a **player** that turns those hand-coded pag
 
 ## How it works
 
-1. **Copy the prompt.** The home screen has a *Copier le prompt pour Claude* (copy the prompt) button. The prompt is the whole format specification plus art-direction rules.
-2. **Ask any Claude.** Paste it into claude.ai, the desktop app or Claude Code, followed by your topic. Claude returns one self-contained `.deck.html` file.
+1. **Type your topic and copy the prompt.** On the home screen, type what your talk is about (*"The Eiffel Tower, for 14-year-olds, 10 minutes"*) and press *Copier le prompt* or <kbd>Enter</kbd>. You get the whole format specification and art-direction rules, with your topic appended.
+2. **Ask any Claude.** Paste it into claude.ai, the desktop app or Claude Code. Claude returns one self-contained `.deck.html` file.
 3. **Drop it into Motion Slides** and present. No install, no account, no API key: everything runs locally in your browser.
 
 The prompt pushes Claude towards real visual storytelling: an identity derived from the topic (palette, fonts, a recurring motif), an SVG illustration on every slide, and every figure shown **to scale** next to familiar references.

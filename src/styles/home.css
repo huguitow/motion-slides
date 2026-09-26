@@ -139,11 +139,54 @@
   color: var(--paper-dim);
 }
 
+.topic {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 540px;
+  margin-top: var(--space-6);
+}
+
+.topic-label {
+  font: 500 11px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.topic textarea {
+  width: 100%;
+  max-height: 168px;
+  padding: 14px var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-2);
+  background: var(--ink-1);
+  color: var(--paper);
+  font: 400 17px/1.45 var(--font-ui);
+  resize: none;
+  overflow-y: auto;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.topic textarea::placeholder {
+  color: var(--paper-faint);
+}
+
+.home .topic textarea:focus-visible {
+  outline: none;
+  border-color: var(--tally);
+  box-shadow: 0 0 0 3px var(--tally-soft);
+}
+
+.topic-hint {
+  font-size: 12px;
+  color: var(--paper-faint);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
 }
 
 .button {
