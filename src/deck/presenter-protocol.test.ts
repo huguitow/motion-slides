@@ -17,6 +17,12 @@ describe('parsePresenterMessage', () => {
       { type: 'state', deck, position: { slide: 0, step: 0 } },
       { type: 'action', action: 'next' },
       { type: 'action', action: 'last' },
+      { type: 'action', action: 'black' },
+      { type: 'action', action: 'white' },
+      { type: 'laser', point: { x: 0.25, y: 1 } },
+      { type: 'laser', point: null },
+      { type: 'blank', blank: 'black' },
+      { type: 'blank', blank: 'none' },
     ];
     for (const message of messages) {
       expect(parsePresenterMessage(message)).toEqual(message);
@@ -32,6 +38,19 @@ describe('parsePresenterMessage', () => {
   test('rejects actions the presenter window may not trigger', () => {
     expect(parsePresenterMessage({ type: 'action', action: 'exit' })).toBeNull();
     expect(parsePresenterMessage({ type: 'action', action: 'fullscreen' })).toBeNull();
+  });
+
+  test('rejects laser points outside the stage or not made of numbers', () => {
+    expect(parsePresenterMessage({ type: 'laser', point: { x: 1.2, y: 0.5 } })).toBeNull();
+    expect(parsePresenterMessage({ type: 'laser', point: { x: -0.1, y: 0.5 } })).toBeNull();
+    expect(parsePresenterMessage({ type: 'laser', point: { x: '0.5', y: 0.5 } })).toBeNull();
+    expect(parsePresenterMessage({ type: 'laser', point: { x: Number.NaN, y: 0.5 } })).toBeNull();
+    expect(parsePresenterMessage({ type: 'laser' })).toBeNull();
+  });
+
+  test('rejects unknown blank screens', () => {
+    expect(parsePresenterMessage({ type: 'blank', blank: 'red' })).toBeNull();
+    expect(parsePresenterMessage({ type: 'blank' })).toBeNull();
   });
 
   test('rejects malformed positions', () => {

@@ -1,16 +1,21 @@
+import { applyBlank, type Blank } from '../deck/blank';
+import { viewportPoint, type StagePoint } from '../deck/fit';
 import { jumpInput } from '../deck/jump';
-import { actionForKey, type PlayerAction } from '../deck/keymap';
+import { actionForKeyEvent, type PlayerAction } from '../deck/keymap';
 import { carryPosition, first, goTo, last, next, prev, type Position } from '../deck/navigation';
 import { DeckParseError, parseDeck } from '../deck/parse';
 import type { Deck } from '../deck/types';
 import { validateDeck } from '../deck/validate';
 import { watchFile } from './file-watch';
 import { openOverview, type OverviewHandle } from './overview';
+import { createOverlays } from './player-overlays';
 import { createIssuesPanel, createPlayerDom, createToast, issuesCount, renderHud, watchIdle } from './player-ui';
 import { createPresenterLink } from './presenter-link';
 import { printDeck } from './print';
 import { createRetouchPanel } from './retouch-panel';
 import { Stage } from './stage';
+import { bindSwipe } from './touch';
+import { createLaserPointer, createRemoteDot } from '../ui/laser';
 
 /** The file a deck was read from. */
 export interface DeckFile {
@@ -31,6 +36,8 @@ export interface PlayerHandle {
   destroy(): void;
 }
 
+const MODIFIER_KEYS = new Set(['Control', 'Shift', 'Alt', 'Meta']);
+
 const stepsOf = (deck: Deck) => deck.slides.map((slide) => slide.steps);
 
 /** Mounts a full-window presentation of `initialDeck` (parsed from `options.file`) inside `host`. */
@@ -43,16 +50,31 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
   let jumpBuffer = '';
   let overview: OverviewHandle | null = null;
   let stopWatching: (() => void) | null = null;
+  let blank: Blank = 'none';
 
   const dom = createPlayerDom();
   host.append(dom.element);
   const stage = new Stage(dom.viewport, () => position.step);
   const toast = createToast(dom.toast);
+  const overlays = createOverlays(dom.element, () => perform(blank === 'black' ? 'black' : 'white'));
+  const laser = createLaserPointer({ surface: dom.shield, layer: dom.element });
+  const remoteDot = createRemoteDot(dom.element);
+  const swipe = bindSwipe(dom.shield, (action) => perform(action));
   const presenter = createPresenterLink({
     deck: () => deck,
     position: () => position,
+    blank: () => blank,
     onAction: (action) => perform(action),
+    onLaser: (point) => remoteDot.show(point && toPlayerPixels(point)),
   });
+
+  /** A stage position from the presenter window, in pixels of the player where the dot is drawn. */
+  const toPlayerPixels = (point: StagePoint) => {
+    const viewport = dom.viewport.getBoundingClientRect();
+    const player = dom.element.getBoundingClientRect();
+    const inViewport = viewportPoint(point, viewport.width, viewport.height);
+    return { x: viewport.left - player.left + inViewport.x, y: viewport.top - player.top + inViewport.y };
+  };
   const issues = createIssuesPanel(dom, toast);
   const retouch = createRetouchPanel(dom, toast, () => ({
     fileName: options.file.name,
@@ -129,7 +151,24 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     });
   };
 
+  /** Every key, click and remote action goes through here, so a blank screen can swallow it. */
   const perform = (action: PlayerAction) => {
+    const outcome = applyBlank(blank, action);
+    if (outcome.blank !== blank) {
+      blank = outcome.blank;
+      // Nothing may stay open under a blank screen and capture the key meant to bring the slide back.
+      if (blank !== 'none') {
+        closeOverview();
+        retouch.close();
+        overlays.closeHelp();
+      }
+      overlays.setBlank(blank);
+      presenter.publishBlank();
+    }
+    if (outcome.action) run(outcome.action);
+  };
+
+  const run = (action: PlayerAction) => {
     switch (action) {
       case 'next':
         return moveTo(next(position, steps));
@@ -150,6 +189,13 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
         return exportPdf();
       case 'retouch':
         return retouch.toggle();
+      case 'laser':
+        return toast.show(laser.toggle() ? 'Pointeur laser activé (L pour l’éteindre)' : 'Pointeur laser désactivé');
+      case 'help':
+        return overlays.toggleHelp();
+      case 'black':
+      case 'white':
+        return; // Handled by applyBlank in perform().
       case 'exit':
         if (!document.fullscreenElement) options.onExit();
         return;
@@ -192,12 +238,22 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
         return retouch.close();
       }
     }
+    if (overlays.isHelpOpen() && event.key === 'Escape') {
+      event.preventDefault();
+      return overlays.closeHelp();
+    }
     // Ctrl+P prints the whole deck rather than a screenshot of the current slide.
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
       event.preventDefault();
       return exportPdf();
     }
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    // On a blank screen any key brings the slide back, except a lone modifier (Ctrl shows the laser).
+    if (blank !== 'none' && !MODIFIER_KEYS.has(event.key)) {
+      event.preventDefault();
+      return perform(actionForKeyEvent(event) ?? 'next');
+    }
+    // Combinations belong to the browser, but Ctrl+arrows still navigate while pointing with Ctrl held.
+    if (event.ctrlKey || event.metaKey || event.altKey) return routeAction(event);
     if (overview) {
       if (overview.handleKey(event)) event.preventDefault();
       else routeAction(event);
@@ -210,13 +266,15 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
   };
 
   const routeAction = (event: KeyboardEvent) => {
-    const action = actionForKey(event.key);
+    const action = actionForKeyEvent(event);
     if (!action) return;
     event.preventDefault();
     perform(action);
   };
 
-  dom.shield.addEventListener('click', () => perform('next'));
+  dom.shield.addEventListener('click', () => {
+    if (!swipe.consumeClick()) perform('next');
+  });
   dom.shield.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     perform('prev');
@@ -242,6 +300,9 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     destroy() {
       stopWatching?.();
       stopWatching = null;
+      laser.destroy();
+      remoteDot.destroy();
+      swipe.destroy();
       document.removeEventListener('keydown', onKeyDown);
       printing?.abort();
       stopIdleWatch();
