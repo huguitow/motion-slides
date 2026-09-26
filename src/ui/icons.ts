@@ -9,6 +9,7 @@ export const ICONS = {
   presenter: icon('<rect x="2.5" y="4" width="15" height="10" rx="1.5"/><path d="M10 14v3M6.5 17h7M6 7.5h5M6 10h3"/>'),
   pdf: icon('<path d="M5.5 7V3h9v4"/><rect x="3" y="7" width="14" height="7" rx="1.5"/><path d="M5.5 12h9v5h-9z"/>'),
   fullscreen: icon('<path d="M3 7.5V3h4.5M17 7.5V3h-4.5M3 12.5V17h4.5M17 12.5V17h-4.5"/>'),
+  download: icon('<path d="M10 3v9.5M6 8.5l4 4 4-4"/><path d="M3.5 13.5v2A1.5 1.5 0 0 0 5 17h10a1.5 1.5 0 0 0 1.5-1.5v-2"/>'),
   retouch: icon('<path d="M13.5 3.5l3 3L7 16H4v-3z"/><path d="M11.5 5.5l3 3"/>'),
   close: icon('<path d="M5 5l10 10M15 5 5 15"/>'),
   warning: icon('<path d="M10 3 2.5 16.5h15z"/><path d="M10 8.5v3.5M10 14.5v.01"/>'),

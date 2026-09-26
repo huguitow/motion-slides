@@ -62,6 +62,8 @@ The prompt pushes Claude towards real visual storytelling: an identity derived f
 | **Touch and remotes** | Swipe left or right on a phone or tablet. Presentation remotes work out of the box: they send the same keys (Page ↓/↑, <kbd>B</kbd>, <kbd>F5</kbd>). |
 | **Overview** | <kbd>O</kbd> opens a grid of live thumbnails; arrows + <kbd>Enter</kbd> to jump. Or type a slide number and press <kbd>Enter</kbd>. |
 | **Presenter view** | <kbd>P</kbd> opens a second window with the current slide, the next build, your speaker notes, a timer and the clock. It remote-controls the audience window. |
+| **Standalone export** | The download button turns the deck into a single `.presentation.html` with the player, the fonts and the deck inside. Send it to anyone: it opens in any browser, offline, straight into the presentation. Dropping it back into Motion Slides reopens the deck. |
+| **Recent decks** | Decks you open from a file are listed on the home screen (in this browser only, never uploaded). *Reprendre* resumes at the slide you left and, on Chrome and Edge, reads the latest version of the file. |
 | **PDF export** | <kbd>Ctrl</kbd>+<kbd>P</kbd> exports one 16:9 page per slide, each at its final build. |
 | **Live reload** | On Chrome and Edge, a deck opened with *Ouvrir un fichier* or dropped on the window is watched: every time the file changes on disk (say, Claude Code just edited it), the player reloads it and stays on the same slide and build. A pulsing *En direct* badge shows it is on. |
 | **Retouch a slide** | <kbd>E</kbd> (or the pencil button) opens a box where you describe what to change on the current slide. It copies a request for Claude with your instruction and the slide's code; with live reload, the fixed slide appears as soon as Claude edits the file. |
@@ -133,7 +135,7 @@ npm install
 npm run dev        # http://localhost:5173
 npm test           # unit tests (Vitest + jsdom)
 npm run coverage   # coverage of the pure logic
-npm run build      # type-check + production build in dist/
+npm run build      # type-check + production build in dist/, including the standalone player used by the export
 ```
 
 Built with TypeScript and Vite, no framework; the only runtime dependencies are the three bundled font families. The pure logic (parsing, navigation, validation, the slide runtime, the presenter protocol) lives in [`src/deck/`](src/deck/) and is unit-tested; the UI lives in [`src/home/`](src/home/), [`src/player/`](src/player/) and [`src/presenter/`](src/presenter/).

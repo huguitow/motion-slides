@@ -1,7 +1,9 @@
 import claudePrompt from '../../prompt/PROMPT_CLAUDE.md?raw';
 import { parseDeck } from '../deck/parse';
 import { ICONS } from '../ui/icons';
+import type { RecentDeck } from '../deck/recents';
 import { canPickFileHandles, droppedFileHandle, pickFileHandle } from './open-file';
+import { mountRecentsList } from './recents-list';
 import { mountPreview, type PreviewHandle } from './preview';
 import { buildPrompt } from './prompt';
 
@@ -14,12 +16,19 @@ const EXAMPLES = [
   { file: 'tour-eiffel.deck.html', label: 'La tour Eiffel' },
 ] as const;
 
+/**
+ * Where a deck comes from. A file's `handle` is given when the browser lets the player follow
+ * later edits of it; only files are remembered among the recent decks.
+ */
+export type DeckOrigin = { readonly kind: 'file'; readonly handle?: FileSystemFileHandle } | { readonly kind: 'example' };
+
 export interface HomeOptions {
-  /**
-   * Called with the raw text of a deck the user picked, dropped or chose among the examples.
-   * `handle` is given when the browser lets the player follow later edits of the file.
-   */
-  readonly onDeckSource: (source: string, fileName: string, handle?: FileSystemFileHandle) => void;
+  /** Called with the raw text of a deck the user picked, dropped or chose among the examples. */
+  readonly onDeckSource: (source: string, fileName: string, origin: DeckOrigin) => void;
+  /** Called when the user resumes one of the recent decks. */
+  readonly onResume: (recent: RecentDeck) => void;
+  /** Settles once pending writes to the recent decks are done, so the list shows them. */
+  readonly recentsSaved: Promise<void>;
   /** Base URL of the bundled example decks. */
   readonly examplesUrl: string;
 }
@@ -42,6 +51,7 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
   const stopCopy = bindCopy(dom);
   const preview = mountPreview({ viewport: dom.viewport, timeline: dom.timeline, timecode: dom.timecode });
   bindExamples(dom, options, preview, showError);
+  mountRecentsList(dom.recents, options.onResume, options.recentsSaved);
 
   return {
     showError,
@@ -62,7 +72,7 @@ function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: stri
       return showError(`Fichier trop lourd (${Math.round(file.size / 1024 / 1024)} Mo, maximum 20 Mo).`);
     }
     try {
-      options.onDeckSource(await file.text(), file.name, handle ?? undefined);
+      options.onDeckSource(await file.text(), file.name, { kind: 'file', handle: handle ?? undefined });
     } catch (error) {
       console.error(error);
       showError(`Impossible de lire « ${file.name} ».`);
@@ -204,7 +214,7 @@ function bindExamples(dom: HomeDom, options: HomeOptions, preview: PreviewHandle
 
   const present = async () => {
     try {
-      options.onDeckSource(await fetchSource(current), current);
+      options.onDeckSource(await fetchSource(current), current, { kind: 'example' });
     } catch (error) {
       console.error(error);
       showError(`Impossible d'ouvrir l'exemple « ${current} ».`);
@@ -249,6 +259,7 @@ function createHomeDom() {
         </div>
         <p class="hint">ou glisse ton <code>.deck.html</code> n'importe où sur la page</p>
         <p class="home-error" role="alert" hidden></p>
+        <section class="recents" aria-label="Decks récents" hidden></section>
       </section>
 
       <figure class="projector">
@@ -305,6 +316,7 @@ function createHomeDom() {
     present: find<HTMLButtonElement>('[data-action="present"]'),
     input: find<HTMLInputElement>('input[type="file"]'),
     error: find<HTMLParagraphElement>('.home-error'),
+    recents: find<HTMLElement>('.recents'),
     screen: find<HTMLElement>('.projector-screen'),
     viewport: find<HTMLElement>('.projector-viewport'),
     timeline: find<HTMLElement>('.timeline'),

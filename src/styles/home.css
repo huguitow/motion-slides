@@ -242,6 +242,122 @@
   color: var(--paper-faint);
 }
 
+/* ---------- Recent decks ---------- */
+
+.recents {
+  margin-top: var(--space-6);
+}
+
+.recents[hidden] {
+  display: none;
+}
+
+.recents h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--paper-faint);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.recents ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--ink-1);
+  transition: border-color 0.15s;
+}
+
+.recent:hover,
+.recent:focus-within {
+  border-color: var(--line-strong);
+}
+
+.recent-resume {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  text-align: left;
+  cursor: pointer;
+}
+
+.recent-resume strong,
+.recent-resume span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.recent-resume strong {
+  font: 600 14px var(--font-ui);
+}
+
+.recent-resume span {
+  color: var(--paper-faint);
+  font: 12px var(--font-mono);
+}
+
+.recent-forget {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--paper-faint);
+  cursor: pointer;
+}
+
+.recent-forget:hover,
+.recent-forget:focus-visible {
+  color: var(--paper);
+}
+
+.recent-forget .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Replay screen of an exported presentation ---------- */
+
+.replay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  background: var(--ink-0);
+  color: var(--paper);
+  text-align: center;
+}
+
+.replay h1 {
+  margin: 0;
+  font: 400 clamp(36px, 6vw, 72px) / 1.05 var(--font-display);
+}
+
+.replay p {
+  margin: 0;
+  color: var(--paper-faint);
+  font: 12px var(--font-mono);
+}
+
 .home-error {
   margin: var(--space-4) 0 0;
   padding: var(--space-3) var(--space-4);

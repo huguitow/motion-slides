@@ -1,4 +1,5 @@
 import { applyBlank, type Blank } from '../deck/blank';
+import { exportFileName } from '../deck/embed';
 import { viewportPoint, type StagePoint } from '../deck/fit';
 import { jumpInput } from '../deck/jump';
 import { actionForKeyEvent, type PlayerAction } from '../deck/keymap';
@@ -6,6 +7,7 @@ import { carryPosition, first, goTo, last, next, prev, type Position } from '../
 import { DeckParseError, parseDeck } from '../deck/parse';
 import type { Deck } from '../deck/types';
 import { validateDeck } from '../deck/validate';
+import { exportPresentation, ExportUnavailableError } from './export';
 import { watchFile } from './file-watch';
 import { openOverview, type OverviewHandle } from './overview';
 import { createOverlays } from './player-overlays';
@@ -30,6 +32,10 @@ export interface PlayerOptions {
   readonly onExit: () => void;
   /** Called after the deck was reloaded from its file. */
   readonly onDeckChange?: (deck: Deck) => void;
+  /** Where to start, e.g. where a recent deck was left; clamped to the deck. */
+  readonly startAt?: Position;
+  /** Called after every move, to remember where the presentation is. */
+  readonly onPositionChange?: (position: Position) => void;
 }
 
 export interface PlayerHandle {
@@ -46,7 +52,7 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
   let deck = initialDeck;
   let source = options.file.source;
   let steps = stepsOf(deck);
-  let position: Position = first();
+  let position: Position = options.startAt ? carryPosition(options.startAt, steps) : first();
   let jumpBuffer = '';
   let overview: OverviewHandle | null = null;
   let stopWatching: (() => void) | null = null;
@@ -92,6 +98,7 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     presenter.publish(position);
     renderHud(dom, deck, position);
     retouch.refresh();
+    options.onPositionChange?.(position);
   };
 
   /** Swaps in a new version of the file, staying on the same slide and build when they still exist. */
@@ -108,6 +115,7 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     source = text;
     steps = stepsOf(deck);
     position = carryPosition(position, steps);
+    options.onPositionChange?.(position);
     closeOverview();
     stage.invalidate();
     stage.display(deck, position, 'none', 'forward');
@@ -187,6 +195,8 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
         return;
       case 'pdf':
         return exportPdf();
+      case 'export':
+        return exportStandalone();
       case 'retouch':
         return retouch.toggle();
       case 'laser':
@@ -209,6 +219,17 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
     toast.show(jumpBuffer ? `Aller à la slide ${jumpBuffer} — Entrée pour valider` : '', true);
     if (jump.target !== undefined) moveTo(goTo(jump.target, steps));
     return jump.handled;
+  };
+
+  /** A single .html file with the player and the deck as it is now (reloaded version included). */
+  const exportStandalone = () => {
+    exportPresentation({ source, title: deck.title, fileName: options.file.name })
+      .then(() => toast.show(`Présentation exportée : ${exportFileName(options.file.name)}`))
+      .catch((error: unknown) => {
+        if (error instanceof ExportUnavailableError) return toast.show(error.message);
+        console.error(error);
+        toast.show('Export impossible.');
+      });
   };
 
   // Aborted by destroy(): leaving the player mid-export must not leave the overlay or open a print dialog.
@@ -289,11 +310,14 @@ export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: Playe
   document.addEventListener('keydown', onKeyDown);
   const stopIdleWatch = watchIdle(dom.element);
 
-  stage.display(deck, position, deck.slides[0].transition, 'forward');
+  stage.display(deck, position, deck.slides[position.slide].transition, 'forward');
   renderHud(dom, deck, position);
   const found = validateDeck(source);
   issues.update(found);
   if (found.length > 0) toast.show(`${issuesCount(found.length)} dans ce fichier : clique sur ⚠ pour les voir.`);
+  else if (position.slide > 0 || position.step > 0) {
+    toast.show(`Repris à la slide ${position.slide + 1} · Début pour revenir au début`);
+  }
   if (options.file.handle) follow(options.file.handle);
 
   return {
