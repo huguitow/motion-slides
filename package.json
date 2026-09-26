@@ -9,7 +9,15 @@
     "type": "git",
     "url": "https://github.com/huguitow/motion-slides.git"
   },
-  "keywords": ["presentation", "slides", "motion-design", "claude", "html", "svg", "vite"],
+  "keywords": [
+    "presentation",
+    "slides",
+    "motion-design",
+    "claude",
+    "html",
+    "svg",
+    "vite"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,5 +34,10 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
     "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0"
   }
 }

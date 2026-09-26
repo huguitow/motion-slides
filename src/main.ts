@@ -1,9 +1,11 @@
 import { DeckParseError, parseDeck } from './deck/parse';
 import { validateDeck } from './deck/validate';
-import { mountHome, type HomeHandle } from './home';
+import { mountHome, type HomeHandle } from './home/home';
 import { mountPlayer, type PlayerHandle } from './player/player';
 import { mountPresenter } from './presenter/presenter';
+import './styles/tokens.css';
 import './styles/app.css';
+import './styles/home.css';
 
 const APP_TITLE = 'Motion Slides';
 const app = document.querySelector<HTMLElement>('#app')!;

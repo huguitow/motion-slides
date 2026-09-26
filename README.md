@@ -36,6 +36,9 @@ Motion Slides is the missing piece: a **player** that turns those hand-coded pag
 
 The prompt pushes Claude towards real visual storytelling: an identity derived from the topic (palette, fonts, a recurring motif), an SVG illustration on every slide, and every figure shown **to scale** next to familiar references.
 
+<img src="docs/media/home.png" alt="The Motion Slides home screen: a headline, a button to copy the prompt for Claude, and a projection screen playing an example deck live with an editing-style timeline" width="100%">
+<div align="center"><sub>The home screen plays a deck live, like a projection room. Drop a <code>.deck.html</code> anywhere to present it.</sub></div>
+
 ## Features
 
 | | |

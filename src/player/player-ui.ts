@@ -1,6 +1,7 @@
 import type { Position } from '../deck/navigation';
 import type { Deck } from '../deck/types';
 import type { DeckIssue } from '../deck/validate';
+import { ICONS } from '../ui/icons';
 
 const IDLE_HIDE_MS = 2500;
 const TOAST_MS = 4000;
@@ -25,15 +26,19 @@ export function createPlayerDom(title: string) {
     <div class="player-hud" role="toolbar" aria-label="Contrôles de la présentation">
       <span class="player-title"></span>
       <span class="player-steps"></span>
-      <button type="button" data-action="prev" aria-label="Précédent" title="Précédent (←)">←</button>
-      <span class="player-counter"></span>
-      <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">→</button>
-      <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">▦</button>
-      <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">◧</button>
-      <button type="button" data-action="pdf" aria-label="Exporter en PDF" title="Exporter en PDF (Ctrl+P)">⎙</button>
-      <button type="button" data-action="fullscreen" aria-label="Plein écran" title="Plein écran (F)">⛶</button>
-      <button type="button" data-panel="issues" class="player-issues-button" hidden></button>
-      <button type="button" data-action="exit" aria-label="Fermer" title="Fermer (Échap)">✕</button>
+      <span class="hud-group">
+        <button type="button" data-action="prev" aria-label="Précédent" title="Précédent (←)">${ICONS.prev}</button>
+        <span class="player-counter"></span>
+        <button type="button" data-action="next" aria-label="Suivant" title="Suivant (espace)">${ICONS.next}</button>
+      </span>
+      <span class="hud-group">
+        <button type="button" data-action="overview" aria-label="Vue d’ensemble" title="Vue d’ensemble (O)">${ICONS.overview}</button>
+        <button type="button" data-action="presenter" aria-label="Vue présentateur" title="Vue présentateur (P)">${ICONS.presenter}</button>
+        <button type="button" data-action="pdf" aria-label="Exporter en PDF" title="Exporter en PDF (Ctrl+P)">${ICONS.pdf}</button>
+        <button type="button" data-action="fullscreen" aria-label="Plein écran" title="Plein écran (F)">${ICONS.fullscreen}</button>
+        <button type="button" data-panel="issues" class="player-issues-button" hidden></button>
+        <button type="button" data-action="exit" aria-label="Fermer" title="Fermer (Échap)">${ICONS.close}</button>
+      </span>
     </div>`;
 
   const find = <T extends Element>(selector: string) => element.querySelector<T>(selector)!;
@@ -63,7 +68,7 @@ export function bindIssues(dom: PlayerDom, issues: readonly DeckIssue[], toast: 
   const count = `${issues.length} point${issues.length > 1 ? 's' : ''} à corriger`;
 
   dom.issuesButton.hidden = false;
-  dom.issuesButton.textContent = `⚠ ${issues.length}`;
+  dom.issuesButton.innerHTML = `${ICONS.warning}<span>${issues.length}</span>`;
   dom.issuesButton.title = count;
   dom.issuesButton.setAttribute('aria-label', count);
   for (const issue of issues) {
@@ -89,7 +94,8 @@ export function bindIssues(dom: PlayerDom, issues: readonly DeckIssue[], toast: 
 export function renderHud(dom: PlayerDom, deck: Deck, position: Position): void {
   const steps = deck.slides.map((slide) => slide.steps);
   const slide = deck.slides[position.slide];
-  dom.counter.textContent = `${position.slide + 1} / ${deck.slides.length}`;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  dom.counter.textContent = `${pad(position.slide + 1)} / ${pad(deck.slides.length)}`;
   dom.steps.textContent = slide.steps > 0 ? `étape ${position.step} / ${slide.steps}` : '';
   const total = steps.reduce((sum, n) => sum + n + 1, 0);
   const done = steps.slice(0, position.slide).reduce((sum, n) => sum + n + 1, 0) + position.step + 1;

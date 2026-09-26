@@ -1,0 +1,61 @@
+/*
+ * Motion Slides design tokens — "la salle de projection".
+ * Warm near-black like a darkened room, paper-coloured type, and a single
+ * accent: the red of a tally light ("on air"). Slides keep their own palettes;
+ * the chrome stays quiet so they can shine.
+ */
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+
+:root {
+  /* Surfaces, darkest to lightest */
+  --ink-0: #0d0c0a;
+  --ink-1: #151411;
+  --ink-2: #1e1c18;
+  --ink-3: #28251f;
+  --line: #2e2b25;
+  --line-strong: #454036;
+
+  /* Text */
+  --paper: #efe8da;
+  --paper-dim: #a79f90;
+  --paper-faint: #736c60;
+
+  /* Accent and states */
+  --tally: #ff4b2b;
+  --tally-strong: #ff6a4d;
+  --tally-soft: color-mix(in srgb, var(--tally) 14%, transparent);
+  --warn: #f2b441;
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, transparent);
+
+  /* Type */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* 4px spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  --radius-1: 6px;
+  --radius-2: 10px;
+  --radius-3: 16px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  color-scheme: dark;
+  font-family: var(--font-ui);
+  color: var(--paper);
+  background: var(--ink-0);
+  -webkit-font-smoothing: antialiased;
+}
