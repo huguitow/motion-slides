@@ -10,7 +10,8 @@ import type { Deck } from '../deck/types';
 const POPUP_FEATURES = 'popup,width=1280,height=800';
 
 export interface PresenterLinkOptions {
-  readonly deck: Deck;
+  /** The deck on stage, which changes when its file is reloaded. */
+  readonly deck: () => Deck;
   readonly position: () => Position;
   readonly onAction: (action: RemoteAction) => void;
 }
@@ -19,6 +20,8 @@ export interface PresenterLink {
   /** Opens (or focuses) the presenter window. Returns false when the popup was blocked. */
   open(): boolean;
   publish(position: Position): void;
+  /** Sends the whole deck again, after it was reloaded. */
+  republish(): void;
   destroy(): void;
 }
 
@@ -28,6 +31,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
   let channel: BroadcastChannel | null = null;
 
   const send = (message: PresenterMessage) => channel?.postMessage(message);
+  const sendState = () => send({ type: 'state', deck: options.deck(), position: options.position() });
 
   const connect = () => {
     if (channel) return;
@@ -35,7 +39,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
     channel.addEventListener('message', (event) => {
       const message = parsePresenterMessage(event.data);
       if (message?.type === 'hello') {
-        send({ type: 'state', deck: options.deck, position: options.position() });
+        sendState();
       } else if (message?.type === 'action') {
         options.onAction(message.action);
       }
@@ -53,6 +57,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
     publish(position) {
       send({ type: 'position', position });
     },
+    republish: sendState,
     destroy() {
       send({ type: 'end' });
       channel?.close();

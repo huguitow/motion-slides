@@ -33,6 +33,7 @@ Motion Slides is the missing piece: a **player** that turns those hand-coded pag
 1. **Type your topic and copy the prompt.** On the home screen, type what your talk is about (*"The Eiffel Tower, for 14-year-olds, 10 minutes"*) and press *Copier le prompt* or <kbd>Enter</kbd>. You get the whole format specification and art-direction rules, with your topic appended.
 2. **Ask any Claude.** Paste it into claude.ai, the desktop app or Claude Code. Claude returns one self-contained `.deck.html` file.
 3. **Drop it into Motion Slides** and present. No account, no API key: everything runs locally in your browser.
+4. **Iterate.** Press <kbd>E</kbd> on a slide you want changed, describe the change and paste the request into Claude. With Claude Code editing the file, the slide updates in the player on its own.
 
 ## Getting started
 
@@ -60,6 +61,8 @@ The prompt pushes Claude towards real visual storytelling: an identity derived f
 | **Overview** | <kbd>O</kbd> opens a grid of live thumbnails; arrows + <kbd>Enter</kbd> to jump. Or type a slide number and press <kbd>Enter</kbd>. |
 | **Presenter view** | <kbd>P</kbd> opens a second window with the current slide, the next build, your speaker notes, a timer and the clock. It remote-controls the audience window. |
 | **PDF export** | <kbd>Ctrl</kbd>+<kbd>P</kbd> exports one 16:9 page per slide, each at its final build. |
+| **Live reload** | On Chrome and Edge, a deck opened with *Ouvrir un fichier* or dropped on the window is watched: every time the file changes on disk (say, Claude Code just edited it), the player reloads it and stays on the same slide and build. A pulsing *En direct* badge shows it is on. |
+| **Retouch a slide** | <kbd>E</kbd> (or the pencil button) opens a box where you describe what to change on the current slide. It copies a request for Claude with your instruction and the slide's code; with live reload, the fixed slide appears as soon as Claude edits the file. |
 | **Deck checker** | Generated decks are checked on load (unused builds, unknown transitions, clickable elements, external media…). The deck still plays; a ⚠ button lists the issues and copies a ready-to-paste fix request for Claude. |
 | **Scales everywhere** | Slides are authored on a fixed 1920×1080 canvas and scaled to any screen, from a phone to a projector. |
 
@@ -118,6 +121,7 @@ A `.deck.html` file is arbitrary JavaScript, so Motion Slides treats every slide
 
 - each slide runs in its own `<iframe sandbox="allow-scripts">` **without** `allow-same-origin`: it cannot read the player page, its storage or its cookies;
 - a transparent shield sits above the slides, so keyboard focus and clicks always stay with the player;
+- live reload only ever **reads** the one file you picked or dropped, and stops when you leave the player; nothing is written to disk;
 - the player and slides talk only through a tiny, validated `postMessage` protocol; the presenter window uses a validated `BroadcastChannel` protocol limited to navigation.
 
 ## Development

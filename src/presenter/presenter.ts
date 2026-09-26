@@ -47,6 +47,12 @@ export function mountPresenter(host: HTMLElement, channelId: string): void {
   channel.addEventListener('message', (event) => {
     const message = parsePresenterMessage(event.data);
     if (message?.type === 'state') {
+      // A different deck means the file was reloaded and the slides on stage are stale. A repeated
+      // answer to a retried hello carries the same deck and must not restart the slides.
+      if (deck && JSON.stringify(deck) !== JSON.stringify(message.deck)) {
+        current.invalidate();
+        preview.invalidate();
+      }
       deck = message.deck;
       position = message.position;
       dom.element.classList.remove('is-waiting');

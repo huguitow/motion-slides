@@ -1,36 +1,66 @@
 import { jumpInput } from '../deck/jump';
 import { actionForKey, type PlayerAction } from '../deck/keymap';
-import { first, goTo, last, next, prev, type Position } from '../deck/navigation';
+import { carryPosition, first, goTo, last, next, prev, type Position } from '../deck/navigation';
+import { DeckParseError, parseDeck } from '../deck/parse';
 import type { Deck } from '../deck/types';
+import { validateDeck } from '../deck/validate';
+import { watchFile } from './file-watch';
 import { openOverview, type OverviewHandle } from './overview';
-import type { DeckIssue } from '../deck/validate';
-import { bindIssues, createPlayerDom, createToast, renderHud, watchIdle } from './player-ui';
+import { createIssuesPanel, createPlayerDom, createToast, issuesCount, renderHud, watchIdle } from './player-ui';
 import { createPresenterLink } from './presenter-link';
 import { printDeck } from './print';
+import { createRetouchPanel } from './retouch-panel';
 import { Stage } from './stage';
 
+/** The file a deck was read from. */
+export interface DeckFile {
+  readonly source: string;
+  readonly name: string;
+  /** When given, the file is watched and the deck reloads each time it changes on disk. */
+  readonly handle?: FileSystemFileHandle;
+}
+
 export interface PlayerOptions {
+  readonly file: DeckFile;
   readonly onExit: () => void;
-  /** Validation warnings shown behind a ⚠ button. */
-  readonly issues?: readonly DeckIssue[];
+  /** Called after the deck was reloaded from its file. */
+  readonly onDeckChange?: (deck: Deck) => void;
 }
 
 export interface PlayerHandle {
   destroy(): void;
 }
 
-/** Mounts a full-window presentation of `deck` inside `host`. */
-export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOptions): PlayerHandle {
-  const steps = deck.slides.map((slide) => slide.steps);
+const stepsOf = (deck: Deck) => deck.slides.map((slide) => slide.steps);
+
+/** Mounts a full-window presentation of `initialDeck` (parsed from `options.file`) inside `host`. */
+export function mountPlayer(host: HTMLElement, initialDeck: Deck, options: PlayerOptions): PlayerHandle {
+  // Replaced as a whole when the file is reloaded.
+  let deck = initialDeck;
+  let source = options.file.source;
+  let steps = stepsOf(deck);
   let position: Position = first();
   let jumpBuffer = '';
   let overview: OverviewHandle | null = null;
+  let stopWatching: (() => void) | null = null;
 
-  const dom = createPlayerDom(deck.title);
+  const dom = createPlayerDom();
   host.append(dom.element);
   const stage = new Stage(dom.viewport, () => position.step);
   const toast = createToast(dom.toast);
-  const presenter = createPresenterLink({ deck, position: () => position, onAction: (action) => perform(action) });
+  const presenter = createPresenterLink({
+    deck: () => deck,
+    position: () => position,
+    onAction: (action) => perform(action),
+  });
+  const issues = createIssuesPanel(dom, toast);
+  const retouch = createRetouchPanel(dom, toast, () => ({
+    fileName: options.file.name,
+    source,
+    deck,
+    position,
+    isLive: stopWatching !== null,
+  }));
 
   const moveTo = (target: Position) => {
     if (target === position) return;
@@ -39,6 +69,45 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
     stage.display(deck, position, deck.slides[position.slide].transition, direction);
     presenter.publish(position);
     renderHud(dom, deck, position);
+    retouch.refresh();
+  };
+
+  /** Swaps in a new version of the file, staying on the same slide and build when they still exist. */
+  const reload = (text: string) => {
+    let reloaded: Deck;
+    try {
+      reloaded = parseDeck(text);
+    } catch (error) {
+      if (!(error instanceof DeckParseError)) console.error(error);
+      toast.show('Fichier modifié mais illisible : la version précédente reste affichée.');
+      return;
+    }
+    deck = reloaded;
+    source = text;
+    steps = stepsOf(deck);
+    position = carryPosition(position, steps);
+    closeOverview();
+    stage.invalidate();
+    stage.display(deck, position, 'none', 'forward');
+    presenter.republish();
+    renderHud(dom, deck, position);
+    retouch.refresh();
+    const found = validateDeck(text);
+    issues.update(found);
+    options.onDeckChange?.(deck);
+    toast.show(found.length > 0 ? `Deck mis à jour · ${issuesCount(found.length)}` : 'Deck mis à jour.');
+  };
+
+  const follow = (handle: FileSystemFileHandle) => {
+    dom.live.hidden = false;
+    stopWatching = watchFile(handle, {
+      onChange: reload,
+      onLost: () => {
+        stopWatching = null;
+        dom.live.hidden = true;
+        toast.show('Fichier introuvable : la mise à jour en direct est coupée.');
+      },
+    });
   };
 
   const closeOverview = () => {
@@ -49,6 +118,7 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
 
   // Only reachable while the overview is closed: when open, it receives every key itself.
   const showOverview = () => {
+    retouch.close();
     dom.element.classList.add('has-overview');
     overview = openOverview(dom.element, deck, position.slide, {
       onSelect: (index) => {
@@ -78,6 +148,8 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
         return;
       case 'pdf':
         return exportPdf();
+      case 'retouch':
+        return retouch.toggle();
       case 'exit':
         if (!document.fullscreenElement) options.onExit();
         return;
@@ -110,6 +182,16 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
+    // Already handled on its way up, e.g. Escape closing the retouch panel: it must not also exit.
+    if (event.defaultPrevented) return;
+    // While the retouch panel is open, keys inside it are its own, and Escape closes it rather than the player.
+    if (retouch.isOpen()) {
+      if (event.target instanceof Node && dom.retouchPanel.contains(event.target)) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        return retouch.close();
+      }
+    }
     // Ctrl+P prints the whole deck rather than a screenshot of the current slide.
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
       event.preventDefault();
@@ -151,10 +233,15 @@ export function mountPlayer(host: HTMLElement, deck: Deck, options: PlayerOption
 
   stage.display(deck, position, deck.slides[0].transition, 'forward');
   renderHud(dom, deck, position);
-  bindIssues(dom, options.issues ?? [], toast);
+  const found = validateDeck(source);
+  issues.update(found);
+  if (found.length > 0) toast.show(`${issuesCount(found.length)} dans ce fichier : clique sur ⚠ pour les voir.`);
+  if (options.file.handle) follow(options.file.handle);
 
   return {
     destroy() {
+      stopWatching?.();
+      stopWatching = null;
       document.removeEventListener('keydown', onKeyDown);
       printing?.abort();
       stopIdleWatch();

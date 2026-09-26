@@ -7,6 +7,7 @@ export type PlayerAction =
   | 'overview'
   | 'presenter'
   | 'pdf'
+  | 'retouch'
   | 'exit';
 
 const KEY_ACTIONS: Readonly<Record<string, PlayerAction>> = {
@@ -27,6 +28,8 @@ const KEY_ACTIONS: Readonly<Record<string, PlayerAction>> = {
   O: 'overview',
   p: 'presenter',
   P: 'presenter',
+  e: 'retouch',
+  E: 'retouch',
   Escape: 'exit',
 };
 

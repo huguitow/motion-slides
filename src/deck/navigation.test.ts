@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { first, goTo, last, next, prev, type Position } from './navigation';
+import { carryPosition, first, goTo, last, next, prev, type Position } from './navigation';
 
 // Slide 0 has 2 builds, slide 1 has none, slide 2 has 1.
 const steps = [2, 0, 1];
@@ -54,5 +54,19 @@ describe('jumps', () => {
     expect(goTo(1, steps)).toEqual(at(1, 0));
     expect(goTo(-5, steps)).toEqual(at(0, 0));
     expect(goTo(42, steps)).toEqual(at(2, 0));
+  });
+});
+
+describe('carryPosition', () => {
+  test('keeps the same slide and build when they still exist', () => {
+    expect(carryPosition(at(2, 1), [0, 0, 3])).toEqual(at(2, 1));
+  });
+
+  test('clamps the build when the slide lost some', () => {
+    expect(carryPosition(at(0, 2), [1, 0])).toEqual(at(0, 1));
+  });
+
+  test('lands on the last build of the last slide when the deck got shorter', () => {
+    expect(carryPosition(at(4, 0), [0, 2])).toEqual(at(1, 2));
   });
 });

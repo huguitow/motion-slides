@@ -38,3 +38,9 @@ export function last(steps: readonly number[]): Position {
 export function goTo(slide: number, steps: readonly number[]): Position {
   return { slide: Math.min(Math.max(slide, 0), steps.length - 1), step: 0 };
 }
+
+/** Keeps `position` in a reloaded deck whose slides may have changed, clamping what no longer exists. */
+export function carryPosition(position: Position, steps: readonly number[]): Position {
+  if (position.slide >= steps.length) return last(steps);
+  return { slide: position.slide, step: Math.min(position.step, steps[position.slide]) };
+}

@@ -1,6 +1,7 @@
 import claudePrompt from '../../prompt/PROMPT_CLAUDE.md?raw';
 import { parseDeck } from '../deck/parse';
 import { ICONS } from '../ui/icons';
+import { canPickFileHandles, droppedFileHandle, pickFileHandle } from './open-file';
 import { mountPreview, type PreviewHandle } from './preview';
 import { buildPrompt } from './prompt';
 
@@ -14,8 +15,11 @@ const EXAMPLES = [
 ] as const;
 
 export interface HomeOptions {
-  /** Called with the raw text of a deck the user picked, dropped or chose among the examples. */
-  readonly onDeckSource: (source: string, fileName: string) => void;
+  /**
+   * Called with the raw text of a deck the user picked, dropped or chose among the examples.
+   * `handle` is given when the browser lets the player follow later edits of the file.
+   */
+  readonly onDeckSource: (source: string, fileName: string, handle?: FileSystemFileHandle) => void;
   /** Base URL of the bundled example decks. */
   readonly examplesUrl: string;
 }
@@ -52,20 +56,31 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
 
 /** File picker plus a whole-window drop target with a full-screen overlay. */
 function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: string) => void): () => void {
-  const readFile = async (file: File | undefined) => {
+  const readFile = async (file: File | undefined, handle?: FileSystemFileHandle | null) => {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
       return showError(`Fichier trop lourd (${Math.round(file.size / 1024 / 1024)} Mo, maximum 20 Mo).`);
     }
     try {
-      options.onDeckSource(await file.text(), file.name);
+      options.onDeckSource(await file.text(), file.name, handle ?? undefined);
     } catch (error) {
       console.error(error);
       showError(`Impossible de lire « ${file.name} ».`);
     }
   };
 
-  dom.open.addEventListener('click', () => dom.input.click());
+  // The system picker returns a handle the player can watch; the <input> is the fallback elsewhere.
+  const pickFile = async () => {
+    try {
+      const handle = await pickFileHandle();
+      if (handle) await readFile(await handle.getFile(), handle);
+    } catch (error) {
+      console.error(error);
+      showError('Impossible d’ouvrir ce fichier.');
+    }
+  };
+
+  dom.open.addEventListener('click', () => (canPickFileHandles() ? void pickFile() : dom.input.click()));
   dom.input.addEventListener('change', () => {
     void readFile(dom.input.files?.[0]);
     dom.input.value = '';
@@ -87,7 +102,9 @@ function bindFiles(dom: HomeDom, options: HomeOptions, showError: (message: stri
     event.preventDefault();
     depth = 0;
     setDragging(false);
-    void readFile(event.dataTransfer?.files[0]);
+    const file = event.dataTransfer?.files[0];
+    const handle = droppedFileHandle(event);
+    void handle.then((resolved) => readFile(file, resolved));
   };
   window.addEventListener('dragenter', onDragEnter);
   window.addEventListener('dragover', onDragOver);

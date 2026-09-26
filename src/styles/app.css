@@ -212,8 +212,133 @@ body {
 
 .player.has-overview .player-hud,
 .player.has-overview .player-toast,
-.player.has-overview .player-issues {
+.player.has-overview .player-issues,
+.player.has-overview .player-retouch {
   display: none;
+}
+
+/* ---------- Live reload badge ---------- */
+
+.player-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--space-2);
+  border-radius: 999px;
+  background: var(--tally-soft);
+  color: var(--tally-strong);
+  font: 600 11px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.player-live::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tally);
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+.player-live[hidden] {
+  display: none;
+}
+
+@keyframes live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-live::before {
+    animation: none;
+  }
+}
+
+/* ---------- Retouch panel ---------- */
+
+.player-retouch {
+  position: absolute;
+  right: var(--space-4);
+  bottom: 80px;
+  z-index: 3;
+  display: grid;
+  gap: var(--space-3);
+  width: min(480px, calc(100% - var(--space-6)));
+  padding: var(--space-4);
+  border: 1px solid rgb(239 232 218 / 0.14);
+  border-radius: var(--radius-3);
+  background: rgb(21 20 17 / 0.94);
+  backdrop-filter: blur(14px);
+  color: var(--paper);
+  font-size: 14px;
+}
+
+.player-retouch[hidden] {
+  display: none;
+}
+
+.player-retouch header,
+.player-retouch footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.player-retouch header span,
+.player-retouch footer p {
+  margin: 0;
+  color: var(--paper-faint);
+  font-size: 12px;
+}
+
+.player-retouch header span {
+  font-family: var(--font-mono);
+}
+
+.player-retouch textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 84px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-2);
+  background: var(--ink-0);
+  color: var(--paper);
+  font: 14px/1.5 var(--font-ui);
+  resize: vertical;
+}
+
+.player-retouch textarea:focus-visible {
+  border-color: var(--tally);
+  outline: none;
+}
+
+.player-retouch footer button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-1);
+  background: var(--tally);
+  color: #fff;
+  font: 600 13px var(--font-ui);
+  cursor: pointer;
+}
+
+.player-retouch footer button:hover {
+  background: var(--tally-strong);
+}
+
+.player-retouch footer .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .player-issues {
