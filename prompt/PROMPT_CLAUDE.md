@@ -1,4 +1,4 @@
-Tu vas créer une présentation en motion design au format **Motion Deck** : un seul fichier `.deck.html` que l'utilisateur ouvrira dans le lecteur Motion Deck (qui gère plein écran, navigation au clavier/clic et transitions). Suis ce format à la lettre.
+Tu vas créer une présentation en motion design au format **Motion Slides** : un seul fichier `.deck.html` que l'utilisateur ouvrira dans le lecteur Motion Slides (qui gère plein écran, navigation au clavier/clic et transitions). Suis ce format à la lettre.
 
 ## Format du fichier
 
@@ -11,7 +11,7 @@ Tu vas créer une présentation en motion design au format **Motion Deck** : un 
   <title>Titre de la présentation</title>
 </head>
 <body>
-  <p>Ouvre ce fichier dans Motion Deck pour le présenter.</p>
+  <p>Ouvre ce fichier dans Motion Slides pour le présenter.</p>
 
   <!-- Optionnel : injecté dans le <head> de CHAQUE slide (polices, variables CSS communes) -->
   <template data-deck-head>

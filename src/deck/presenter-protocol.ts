@@ -19,7 +19,7 @@ export type PresenterMessage =
 const REMOTE_ACTIONS: readonly RemoteAction[] = ['next', 'prev', 'first', 'last'];
 
 export function presenterChannelName(id: string): string {
-  return `motion-deck:${id}`;
+  return `motion-slides:${id}`;
 }
 
 /** Validates data received from the channel. Returns null for anything unexpected. */

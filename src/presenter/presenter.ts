@@ -22,7 +22,7 @@ type PresenterDom = ReturnType<typeof createPresenterDom>;
 export function mountPresenter(host: HTMLElement, channelId: string): void {
   const dom = createPresenterDom();
   host.append(dom.element);
-  document.title = 'Vue présentateur · Motion Deck';
+  document.title = 'Vue présentateur · Motion Slides';
 
   const channel = new BroadcastChannel(presenterChannelName(channelId));
   const send = (message: PresenterMessage) => channel.postMessage(message);
@@ -114,7 +114,7 @@ function createPresenterDom() {
   element.className = 'presenter is-waiting';
   element.innerHTML = `
     <header class="presenter-bar">
-      <strong class="presenter-title">Motion Deck</strong>
+      <strong class="presenter-title">Motion Slides</strong>
       <span class="presenter-counter"></span>
       <span class="presenter-steps"></span>
       <span class="presenter-spacer"></span>

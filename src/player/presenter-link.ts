@@ -48,7 +48,7 @@ export function createPresenterLink(options: PresenterLinkOptions): PresenterLin
       const url = new URL(window.location.href);
       url.search = new URLSearchParams({ presenter: id }).toString();
       url.hash = '';
-      return window.open(url, `motion-deck-presenter-${id}`, POPUP_FEATURES) !== null;
+      return window.open(url, `motion-slides-presenter-${id}`, POPUP_FEATURES) !== null;
     },
     publish(position) {
       send({ type: 'position', position });

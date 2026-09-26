@@ -25,9 +25,9 @@ export function mountHome(host: HTMLElement, options: HomeOptions): HomeHandle {
   element.className = 'home';
   element.innerHTML = `
     <header class="home-header">
-      <p class="home-kicker">Motion Deck</p>
+      <p class="home-kicker">Motion Slides</p>
       <h1>Tes slides en <em>motion design</em>, présentées comme dans PowerPoint.</h1>
-      <p class="home-lead">Claude écrit la présentation. Motion Deck la joue : espace ou clic pour avancer.</p>
+      <p class="home-lead">Claude écrit la présentation. Motion Slides la joue : espace ou clic pour avancer.</p>
     </header>
 
     <label class="drop-zone" tabindex="0">

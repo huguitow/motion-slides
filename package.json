@@ -1,5 +1,5 @@
 {
-  "name": "motion-deck",
+  "name": "motion-slides",
   "private": true,
   "version": "0.1.0",
   "description": "A PowerPoint-like player for motion-design slides written by Claude as a single .deck.html file.",
@@ -7,7 +7,7 @@
   "author": "Hugo Desjardins",
   "repository": {
     "type": "git",
-    "url": "https://github.com/huguitow/motion-deck.git"
+    "url": "https://github.com/huguitow/motion-slides.git"
   },
   "keywords": ["presentation", "slides", "motion-design", "claude", "html", "svg", "vite"],
   "type": "module",

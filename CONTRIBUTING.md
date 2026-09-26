@@ -1,6 +1,6 @@
-# Contributing to Motion Deck
+# Contributing to Motion Slides
 
-Thanks for your interest! Motion Deck is a small project and contributions of every size are welcome: bug reports, example decks, prompt improvements, translations and code.
+Thanks for your interest! Motion Slides is a small project and contributions of every size are welcome: bug reports, example decks, prompt improvements, translations and code.
 
 ## Getting started
 

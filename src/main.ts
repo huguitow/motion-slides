@@ -5,7 +5,7 @@ import { mountPlayer, type PlayerHandle } from './player/player';
 import { mountPresenter } from './presenter/presenter';
 import './styles/app.css';
 
-const APP_TITLE = 'Motion Deck';
+const APP_TITLE = 'Motion Slides';
 const app = document.querySelector<HTMLElement>('#app')!;
 
 let home: HomeHandle | null = null;

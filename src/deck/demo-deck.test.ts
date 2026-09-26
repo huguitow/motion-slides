@@ -10,7 +10,7 @@ describe('demo deck', () => {
   const deck = parseDeck(readFileSync(demoPath, 'utf8'));
 
   test('follows the documented format', () => {
-    expect(deck.title).toBe('Motion Deck — la démo');
+    expect(deck.title).toBe('Motion Slides — la démo');
     expect(deck.sharedHead).toContain('--violet');
     expect(deck.slides.map((s) => s.steps)).toEqual([0, 2, 3, 3, 2, 2, 0]);
   });

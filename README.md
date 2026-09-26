@@ -1,19 +1,19 @@
 <div align="center">
 
-# Motion Deck
+# Motion Slides
 
 **Slides as motion design. Written by Claude, played like PowerPoint.**
 
 Ask Claude for a presentation, get a single `.deck.html` file,<br>
-drop it into Motion Deck and press <kbd>Space</kbd>.
+drop it into Motion Slides and press <kbd>Space</kbd>.
 
-[![CI](https://github.com/huguitow/motion-deck/actions/workflows/ci.yml/badge.svg)](https://github.com/huguitow/motion-deck/actions/workflows/ci.yml)
+[![CI](https://github.com/huguitow/motion-slides/actions/workflows/ci.yml/badge.svg)](https://github.com/huguitow/motion-slides/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-8b7bff.svg)](LICENSE)
 ![No install, no API key](https://img.shields.io/badge/no%20install-no%20API%20key-3de0c5.svg)
 
-[**Try it in your browser →**](https://huguitow.github.io/motion-deck/)
+[**Try it in your browser →**](https://huguitow.github.io/motion-slides/)
 
-<img src="docs/media/demo.gif" alt="Motion Deck playing its demo deck: a fan of animated slides, a static slide turning into an animated chart, and an illustrated pipeline from Claude to the projector" width="100%">
+<img src="docs/media/demo.gif" alt="Motion Slides playing its demo deck: a fan of animated slides, a static slide turning into an animated chart, and an illustrated pipeline from Claude to the projector" width="100%">
 
 </div>
 
@@ -21,7 +21,7 @@ drop it into Motion Deck and press <kbd>Space</kbd>.
 
 PowerPoint slides are static. Claude, on the other hand, is remarkably good at hand-coding motion design in HTML, CSS, SVG and Canvas: kinetic type, charts that grow, illustrations that draw themselves.
 
-Motion Deck is the missing piece: a **player** that turns those hand-coded pages into a real presentation tool. Full screen, click to advance, builds within a slide, overview, presenter view, PDF export. The slides themselves are just web pages, so anything a browser can render, your slides can do.
+Motion Slides is the missing piece: a **player** that turns those hand-coded pages into a real presentation tool. Full screen, click to advance, builds within a slide, overview, presenter view, PDF export. The slides themselves are just web pages, so anything a browser can render, your slides can do.
 
 <div align="center">
 <img src="docs/media/eiffel-scale.gif" alt="A slide about the Eiffel Tower: the tower is drawn to scale next to a ruler, its three levels appear, then the Montparnasse tower, Big Ben and the Statue of Liberty rise next to it at the same scale" width="100%">
@@ -32,7 +32,7 @@ Motion Deck is the missing piece: a **player** that turns those hand-coded pages
 
 1. **Copy the prompt.** The home screen has a *Copier le prompt pour Claude* (copy the prompt) button. The prompt is the whole format specification plus art-direction rules.
 2. **Ask any Claude.** Paste it into claude.ai, the desktop app or Claude Code, followed by your topic. Claude returns one self-contained `.deck.html` file.
-3. **Drop it into Motion Deck** and present. No install, no account, no API key: everything runs locally in your browser.
+3. **Drop it into Motion Slides** and present. No install, no account, no API key: everything runs locally in your browser.
 
 The prompt pushes Claude towards real visual storytelling: an identity derived from the topic (palette, fonts, a recurring motif), an SVG illustration on every slide, and every figure shown **to scale** next to familiar references.
 
@@ -98,7 +98,7 @@ The full specification is the prompt itself: [`prompt/PROMPT_CLAUDE.md`](prompt/
 
 ## Security model
 
-A `.deck.html` file is arbitrary JavaScript, so Motion Deck treats every slide as untrusted:
+A `.deck.html` file is arbitrary JavaScript, so Motion Slides treats every slide as untrusted:
 
 - each slide runs in its own `<iframe sandbox="allow-scripts">` **without** `allow-same-origin`: it cannot read the player page, its storage or its cookies;
 - a transparent shield sits above the slides, so keyboard focus and clicks always stay with the player;
